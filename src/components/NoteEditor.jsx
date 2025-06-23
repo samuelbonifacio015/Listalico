@@ -230,8 +230,15 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
     return folder ? folder.name : 'Sin carpeta'
   }
 
+  // Función para cerrar el modal al hacer clic fuera
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose()
+    }
+  }
+
   return (
-    <div className="note-editor-overlay">
+    <div className="note-editor-overlay" onClick={handleOverlayClick}>
       <div className="note-editor enhanced">
         <div className="editor-header">
           <div className="header-left">
@@ -256,6 +263,7 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
                 title="Exportar como TXT"
               >
                 <FileText size={16} />
+                <span className="export-label">TXT</span>
               </button>
               <button 
                 onClick={exportAsMarkdown} 
@@ -263,9 +271,11 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
                 title="Exportar como Markdown"
               >
                 <Hash size={16} />
+                <span className="export-label">MD</span>
               </button>
               <label className="btn btn-export" title="Importar archivo">
                 <Upload size={16} />
+                <span className="export-label">Importar</span>
                 <input
                   type="file"
                   accept=".txt,.md"
@@ -519,12 +529,6 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
                 <div className="info-item">
                   <span className="info-label">Caracteres:</span>
                   <span className="info-value">{content.length}</span>
-                </div>
-                <div className="info-item">
-                  <span className="info-label">Palabras:</span>
-                  <span className="info-value">
-                    {content.trim() ? content.trim().split(/\s+/).length : 0}
-                  </span>
                 </div>
               </div>
             </div>
