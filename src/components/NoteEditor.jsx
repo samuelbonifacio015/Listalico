@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { X, Save, CheckSquare, Square, Tag, AlertCircle, Clock, Star, Folder, Plus, Download, Upload, FileText, Hash } from 'lucide-react'
+import { X, Save, CheckSquare, Square, Tag, AlertCircle, Clock, Star, Folder, Plus, Download, Upload, FileText, Hash, Trash2, Calendar, Bell, Target, Zap } from 'lucide-react'
 
-const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => {
+const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose, onDelete = () => {} }) => {
   const [title, setTitle] = useState(note?.title || '')
   const [content, setContent] = useState(note?.content || '')
   const [isTask, setIsTask] = useState(note?.isTask || false)
@@ -13,6 +13,14 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
   const [newFolderName, setNewFolderName] = useState('')
   const [newFolderColor, setNewFolderColor] = useState('#666666')
   const [isMarkdown, setIsMarkdown] = useState(false)
+  
+  // Estados para características de tareas
+  const [dueDate, setDueDate] = useState(note?.dueDate || '')
+  const [reminder, setReminder] = useState(note?.reminder || '')
+  const [completed, setCompleted] = useState(note?.completed || false)
+  const [progress, setProgress] = useState(note?.progress || 0)
+  const [estimatedTime, setEstimatedTime] = useState(note?.estimatedTime || '')
+  const [difficulty, setDifficulty] = useState(note?.difficulty || 'medium')
 
   const folderColors = [
     '#666666', '#007aff', '#34c759', '#ff9500', '#ff453a', 
@@ -27,6 +35,12 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
       setPriority(note.priority)
       setCategories(note.categories)
       setFolderId(note.folderId)
+      setDueDate(note.dueDate || '')
+      setReminder(note.reminder || '')
+      setCompleted(note.completed || false)
+      setProgress(note.progress || 0)
+      setEstimatedTime(note.estimatedTime || '')
+      setDifficulty(note.difficulty || 'medium')
     }
   }, [note])
 
@@ -64,6 +78,12 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
       priority,
       categories,
       folderId,
+      dueDate: isTask ? dueDate : '',
+      reminder: isTask ? reminder : '',
+      completed: isTask ? completed : false,
+      progress: isTask ? progress : 0,
+      estimatedTime: isTask ? estimatedTime : '',
+      difficulty: isTask ? difficulty : 'medium',
       updatedAt: new Date().toISOString()
     }
 
@@ -289,6 +309,13 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
               <Save size={16} />
               Guardar
             </button>
+            <button 
+              onClick={onDelete} 
+              className="btn btn-delete" 
+              title="Mover a papelera"
+            >
+              <Trash2 size={16} />
+            </button>
             <button onClick={onClose} className="btn btn-secondary">
               <X size={16} />
             </button>
@@ -502,6 +529,107 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose }) => 
                 ))}
               </div>
             </div>
+
+            {/* Secciones específicas para tareas */}
+            {isTask && (
+              <>
+                <div className="editor-section">
+                  <h3 className="section-title">
+                    <CheckSquare size={16} />
+                    Estado de Tarea
+                  </h3>
+                  
+                  <div className="task-status">
+                    <label className="task-checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={completed}
+                        onChange={(e) => setCompleted(e.target.checked)}
+                        className="task-checkbox"
+                      />
+                      <span className="checkmark"></span>
+                      {completed ? 'Completada' : 'Pendiente'}
+                    </label>
+                    
+                    <div className="progress-section">
+                      <label className="progress-label">
+                        Progreso: {progress}%
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={progress}
+                        onChange={(e) => setProgress(parseInt(e.target.value))}
+                        className="progress-slider"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="editor-section">
+                  <h3 className="section-title">
+                    <Calendar size={16} />
+                    Fechas
+                  </h3>
+                  
+                  <div className="dates-section">
+                    <div className="date-field">
+                      <label>Fecha límite:</label>
+                      <input
+                        type="datetime-local"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="date-input"
+                      />
+                    </div>
+                    
+                    <div className="date-field">
+                      <label>Recordatorio:</label>
+                      <input
+                        type="datetime-local"
+                        value={reminder}
+                        onChange={(e) => setReminder(e.target.value)}
+                        className="date-input"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="editor-section">
+                  <h3 className="section-title">
+                    <Target size={16} />
+                    Detalles de Tarea
+                  </h3>
+                  
+                  <div className="task-details">
+                    <div className="detail-field">
+                      <label>Tiempo estimado:</label>
+                      <input
+                        type="text"
+                        value={estimatedTime}
+                        onChange={(e) => setEstimatedTime(e.target.value)}
+                        placeholder="ej: 2 horas, 30 min"
+                        className="detail-input"
+                      />
+                    </div>
+                    
+                    <div className="detail-field">
+                      <label>Dificultad:</label>
+                      <select
+                        value={difficulty}
+                        onChange={(e) => setDifficulty(e.target.value)}
+                        className="difficulty-select"
+                      >
+                        <option value="easy">🟢 Fácil</option>
+                        <option value="medium">🟡 Medio</option>
+                        <option value="hard">🔴 Difícil</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="editor-section">
               <h3 className="section-title">Información</h3>

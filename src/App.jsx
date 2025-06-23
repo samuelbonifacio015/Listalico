@@ -3,6 +3,8 @@ import { Plus, Search, FolderPlus, Download, Upload, Trash2 } from 'lucide-react
 import Sidebar from './components/Sidebar'
 import NotesList from './components/NotesList'
 import NoteEditor from './components/NoteEditor'
+import NotePreview from './components/NotePreview'
+import ConfirmModal from './components/ConfirmModal'
 import { useLocalStorage } from './hooks/useLocalStorage'
 
 function App() {
@@ -17,11 +19,23 @@ function App() {
   
   const [notes, setNotes] = useLocalStorage('listalico-notes', [])
   const [deletedFolders, setDeletedFolders] = useLocalStorage('listalico-deleted-folders', [])
+  const [deletedNotes, setDeletedNotes] = useLocalStorage('listalico-deleted-notes', [])
   const [selectedFolder, setSelectedFolder] = useState(folders[0]?.id || null)
   const [selectedNote, setSelectedNote] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showNoteEditor, setShowNoteEditor] = useState(false)
   const [showTrash, setShowTrash] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+  const [expandedFolders, setExpandedFolders] = useState(new Set())
+  
+  // Estados para el modal de confirmación
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'default'
+  })
 
   // Filtrar notas por carpeta seleccionada y término de búsqueda
   const filteredNotes = notes.filter(note => {
@@ -33,11 +47,14 @@ function App() {
   })
 
   const createNewNote = () => {
+    // Si no hay carpeta seleccionada, crear en la primera carpeta disponible
+    const targetFolderId = selectedFolder || folders[0]?.id || null
+    
     const newNote = {
       id: Date.now(),
       title: 'Nueva Nota',
       content: '',
-      folderId: selectedFolder,
+      folderId: targetFolderId,
       priority: 'medium',
       categories: [],
       isTask: false,
@@ -47,7 +64,8 @@ function App() {
     }
     setNotes(prev => [newNote, ...prev])
     setSelectedNote(newNote.id)
-    setShowNoteEditor(true)
+    setShowPreview(true)
+    setShowNoteEditor(false)
   }
 
   const createNewFolder = () => {
@@ -68,14 +86,39 @@ function App() {
     setDeletedFolders(prev => [...prev, deletedFolder])
     setFolders(prev => prev.filter(f => f.id !== folder.id))
     
-    // También mover las notas de la carpeta eliminada
+    // También mover las notas de la carpeta eliminada a papelera
     const folderNotes = notes.filter(note => note.folderId === folder.id)
-    folderNotes.forEach(() => {
-      setNotes(prev => prev.filter(n => n.folderId !== folder.id))
+    folderNotes.forEach(note => {
+      const deletedNote = {
+        ...note,
+        deletedAt: new Date().toISOString(),
+        originalFolderId: note.folderId
+      }
+      setDeletedNotes(prev => [...prev, deletedNote])
     })
+    setNotes(prev => prev.filter(note => note.folderId !== folder.id))
     
     if (selectedFolder === folder.id) {
       setSelectedFolder(null)
+    }
+  }
+
+  const moveNoteToTrash = (noteId) => {
+    const noteToDelete = notes.find(note => note.id === noteId)
+    if (noteToDelete) {
+      const deletedNote = {
+        ...noteToDelete,
+        deletedAt: new Date().toISOString(),
+        originalFolderId: noteToDelete.folderId
+      }
+      setDeletedNotes(prev => [...prev, deletedNote])
+      setNotes(prev => prev.filter(note => note.id !== noteId))
+      
+      if (selectedNote === noteId) {
+        setSelectedNote(null)
+        setShowPreview(false)
+        setShowNoteEditor(false)
+      }
     }
   }
 
@@ -88,10 +131,75 @@ function App() {
     }
   }
 
-  const permanentlyDelete = (folderId) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar permanentemente esta carpeta? Esta acción no se puede deshacer.')) {
-      setDeletedFolders(prev => prev.filter(f => f.id !== folderId))
+  const restoreNoteFromTrash = (noteId) => {
+    const noteToRestore = deletedNotes.find(note => note.id === noteId)
+    if (noteToRestore) {
+      const { deletedAt, originalFolderId, ...restoredNote } = noteToRestore
+      setNotes(prev => [...prev, restoredNote])
+      setDeletedNotes(prev => prev.filter(note => note.id !== noteId))
     }
+  }
+
+  const permanentlyDelete = (folderId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Eliminar permanentemente',
+      message: '¿Estás seguro de que quieres eliminar permanentemente esta carpeta? Esta acción no se puede deshacer.',
+      type: 'danger',
+      onConfirm: () => {
+        setDeletedFolders(prev => prev.filter(f => f.id !== folderId))
+        setConfirmModal({ ...confirmModal, isOpen: false })
+      }
+    })
+  }
+
+  const permanentlyDeleteNote = (noteId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Eliminar permanentemente',
+      message: '¿Estás seguro de que quieres eliminar permanentemente esta nota? Esta acción no se puede deshacer.',
+      type: 'danger',
+      onConfirm: () => {
+        setDeletedNotes(prev => prev.filter(note => note.id !== noteId))
+        setConfirmModal({ ...confirmModal, isOpen: false })
+      }
+    })
+  }
+
+  const confirmDeleteNote = (noteId) => {
+    const note = notes.find(n => n.id === noteId)
+    const folderName = folders.find(f => f.id === note?.folderId)?.name || 'Sin carpeta'
+    
+    setConfirmModal({
+      isOpen: true,
+      title: 'Mover a papelera',
+      message: `¿Estás seguro de que quieres enviar la nota "${note?.title}" (${folderName}) a la papelera?`,
+      type: 'danger',
+      confirmText: 'Mover a papelera',
+      onConfirm: () => {
+        moveNoteToTrash(noteId)
+        setConfirmModal({ ...confirmModal, isOpen: false })
+      }
+    })
+  }
+
+  const confirmDeleteFolder = (folder) => {
+    const notesCount = notes.filter(note => note.folderId === folder.id).length
+    const message = notesCount > 0 
+      ? `¿Estás seguro de que quieres enviar la carpeta "${folder.name}" y sus ${notesCount} nota(s) a la papelera?`
+      : `¿Estás seguro de que quieres enviar la carpeta "${folder.name}" a la papelera?`
+    
+    setConfirmModal({
+      isOpen: true,
+      title: 'Mover a papelera',
+      message,
+      type: 'danger',
+      confirmText: 'Mover a papelera',
+      onConfirm: () => {
+        moveToTrash(folder)
+        setConfirmModal({ ...confirmModal, isOpen: false })
+      }
+    })
   }
 
   const exportData = () => {
@@ -100,6 +208,7 @@ function App() {
         folders,
         notes,
         deletedFolders,
+        deletedNotes,
         exportDate: new Date().toISOString(),
         version: '1.0.0',
         appName: 'Listalico'
@@ -141,7 +250,7 @@ function App() {
         const confirmMessage = `¿Estás seguro de que quieres importar estos datos?\n\n` +
                               `Carpetas: ${data.folders.length}\n` +
                               `Notas: ${data.notes.length}\n` +
-                              `Papelera: ${data.deletedFolders?.length || 0}\n\n` +
+                              `Papelera: ${(data.deletedFolders?.length || 0) + (data.deletedNotes?.length || 0)}\n\n` +
                               `Esto reemplazará todos tus datos actuales.`
 
         if (!window.confirm(confirmMessage)) {
@@ -151,6 +260,7 @@ function App() {
         setFolders(data.folders)
         setNotes(data.notes)
         setDeletedFolders(data.deletedFolders || [])
+        setDeletedNotes(data.deletedNotes || [])
         setSelectedFolder(data.folders[0]?.id || null)
         setSelectedNote(null)
         setShowNoteEditor(false)
@@ -164,6 +274,43 @@ function App() {
     
     // Limpiar el input
     event.target.value = ''
+  }
+
+  // Función para mover nota a carpeta (drag and drop)
+  const moveNoteToFolder = (noteId, targetFolderId) => {
+    setNotes(prev => prev.map(note => 
+      note.id === noteId 
+        ? { ...note, folderId: targetFolderId, updatedAt: new Date().toISOString() }
+        : note
+    ))
+  }
+
+  const handleNoteSelect = (noteId) => {
+    setSelectedNote(noteId)
+    setShowPreview(true)
+    setShowNoteEditor(false)
+  }
+
+  const handleNoteDoubleClick = (noteId) => {
+    setSelectedNote(noteId)
+    setShowNoteEditor(true)
+    setShowPreview(false)
+  }
+
+  const toggleFolderExpansion = (folderId) => {
+    setExpandedFolders(prev => {
+      const newExpanded = new Set(prev)
+      if (newExpanded.has(folderId)) {
+        newExpanded.delete(folderId)
+      } else {
+        newExpanded.add(folderId)
+      }
+      return newExpanded
+    })
+  }
+
+  const closeConfirmModal = () => {
+    setConfirmModal({ ...confirmModal, isOpen: false })
   }
 
   return (
@@ -184,20 +331,6 @@ function App() {
         </div>
         
         <div className="header-actions">
-          <button onClick={createNewNote} className="btn btn-primary" title="Nueva Nota">
-            <Plus size={16} />
-            Nueva Nota
-          </button>
-          <button onClick={createNewFolder} className="btn btn-secondary" title="Nueva Carpeta">
-            <FolderPlus size={16} />
-          </button>
-          <button 
-            onClick={() => setShowTrash(!showTrash)} 
-            className={`btn btn-secondary ${showTrash ? 'active' : ''}`} 
-            title="Papelera"
-          >
-            <Trash2 size={16} />
-          </button>
           <button onClick={exportData} className="btn btn-secondary" title="Exportar datos">
             <Download size={16} />
           </button>
@@ -218,23 +351,57 @@ function App() {
           folders={folders}
           setFolders={setFolders}
           deletedFolders={deletedFolders}
+          deletedNotes={deletedNotes}
           selectedFolder={selectedFolder}
           setSelectedFolder={setSelectedFolder}
           notes={notes}
           showTrash={showTrash}
-          moveToTrash={moveToTrash}
+          setShowTrash={setShowTrash}
+          moveToTrash={confirmDeleteFolder}
           restoreFromTrash={restoreFromTrash}
+          restoreNoteFromTrash={restoreNoteFromTrash}
           permanentlyDelete={permanentlyDelete}
+          permanentlyDeleteNote={permanentlyDeleteNote}
+          createNewFolder={createNewFolder}
+          createNewNote={createNewNote}
+          moveNoteToFolder={moveNoteToFolder}
+          expandedFolders={expandedFolders}
+          toggleFolderExpansion={toggleFolderExpansion}
+          onNoteSelect={handleNoteSelect}
+          selectedNote={selectedNote}
         />
         
         <div className="main-content">
           <NotesList
             notes={filteredNotes}
             selectedNote={selectedNote}
-            setSelectedNote={setSelectedNote}
+            setSelectedNote={handleNoteSelect}
             setShowNoteEditor={setShowNoteEditor}
+            onNoteDoubleClick={handleNoteDoubleClick}
             setNotes={setNotes}
+            folders={folders}
+            showPreview={showPreview}
+            onDeleteNote={confirmDeleteNote}
           />
+          
+          {showPreview && selectedNote && (
+            <NotePreview
+              note={notes.find(n => n.id === selectedNote)}
+              notes={notes}
+              setNotes={setNotes}
+              folders={folders}
+              setFolders={setFolders}
+              onEdit={() => {
+                setShowNoteEditor(true)
+                setShowPreview(false)
+              }}
+              onClose={() => {
+                setShowPreview(false)
+                setSelectedNote(null)
+              }}
+              onDelete={() => confirmDeleteNote(selectedNote)}
+            />
+          )}
           
           {showNoteEditor && selectedNote && (
             <NoteEditor
@@ -243,11 +410,27 @@ function App() {
               setNotes={setNotes}
               folders={folders}
               setFolders={setFolders}
-              onClose={() => setShowNoteEditor(false)}
+              onClose={() => {
+                setShowNoteEditor(false)
+                setShowPreview(true)
+              }}
+              onDelete={() => confirmDeleteNote(selectedNote)}
             />
           )}
         </div>
       </div>
+
+      {/* Modal de confirmación */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        confirmText={confirmModal.confirmText}
+        cancelText="Cancelar"
+      />
     </div>
   )
 }

@@ -1,17 +1,27 @@
 import { useState, useRef, useEffect } from 'react'
-import { Folder, Edit3, Trash2, Palette, RotateCcw, X } from 'lucide-react'
+import { Folder, Edit3, Trash2, Palette, RotateCcw, X, FolderPlus, ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
 
 const Sidebar = ({ 
   folders = [], 
   setFolders = () => {}, 
   deletedFolders = [],
+  deletedNotes = [],
   selectedFolder, 
   setSelectedFolder = () => {}, 
   notes = [],
   showTrash = false,
+  setShowTrash = () => {},
   moveToTrash = () => {},
   restoreFromTrash = () => {},
-  permanentlyDelete = () => {}
+  restoreNoteFromTrash = () => {},
+  permanentlyDelete = () => {},
+  permanentlyDeleteNote = () => {},
+  createNewFolder = () => {},
+  createNewNote = () => {},
+  expandedFolders = new Set(),
+  toggleFolderExpansion = () => {},
+  onNoteSelect = () => {},
+  selectedNote = null
 }) => {
   const [editingFolder, setEditingFolder] = useState(null)
   const [editingName, setEditingName] = useState('')
@@ -21,6 +31,7 @@ const Sidebar = ({
   const [hue, setHue] = useState(0)
   const [saturation, setSaturation] = useState(0)
   const [lightness, setLightness] = useState(40)
+  const [dragOverFolder, setDragOverFolder] = useState(null)
   
   const colorPickerRef = useRef(null)
 
@@ -139,6 +150,45 @@ const Sidebar = ({
     return notes.length
   }
 
+  const getFolderNotes = (folderId) => {
+    return notes.filter(note => note.folderId === folderId)
+  }
+
+  const getFolderName = (folderId) => {
+    if (!folderId) return 'Sin carpeta'
+    const folder = folders.find(f => f.id === folderId)
+    return folder?.name || 'Carpeta eliminada'
+  }
+
+  // Funciones de drag and drop
+  const handleDragOver = (e, folderId) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverFolder(folderId)
+  }
+
+  const handleDragLeave = (e) => {
+    // Solo remover el efecto si realmente salimos del elemento
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOverFolder(null)
+    }
+  }
+
+  const handleDrop = (e, targetFolderId) => {
+    e.preventDefault()
+    setDragOverFolder(null)
+    
+    const noteId = parseInt(e.dataTransfer.getData('text/plain'))
+    if (noteId && moveNoteToFolder) {
+      moveNoteToFolder(noteId, targetFolderId)
+    }
+  }
+
+  const handleFolderClick = (folderId) => {
+    setSelectedFolder(folderId)
+    toggleFolderExpansion(folderId)
+  }
+
   // Cerrar color picker al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -179,58 +229,129 @@ const Sidebar = ({
     return (
       <div className="sidebar">
         <div className="sidebar-header">
-          <h2 className="sidebar-title">🗑️ Papelera</h2>
+          <div className="header-content">
+            <h2 className="sidebar-title">🗑️ Papelera</h2>
+            <div className="header-actions">
+              <button 
+                onClick={() => setShowTrash(false)} 
+                className={`header-btn ${showTrash ? 'active' : ''}`} 
+                title="Carpetas"
+              >
+                <Folder size={16} />
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="folders-list">
-          {deletedFolders.length === 0 ? (
+          {deletedFolders.length === 0 && deletedNotes.length === 0 ? (
             <div className="empty-trash">
               <div className="empty-icon">🗑️</div>
               <p>La papelera está vacía</p>
             </div>
           ) : (
-            deletedFolders.map(folder => (
-              <div key={folder.id} className="folder-container">
-                <div className="folder-item deleted">
-                  <div className="folder-info">
-                    <div className="folder-icon" style={{ backgroundColor: folder.color || '#666666' }}>
-                      <Folder size={16} />
+            <>
+              {/* Carpetas eliminadas */}
+              {deletedFolders.length > 0 && (
+                <div className="trash-section">
+                  <h4 className="trash-section-title">Carpetas</h4>
+                  {deletedFolders.map(folder => (
+                    <div key={folder.id} className="folder-container">
+                      <div className="folder-item deleted">
+                        <div className="folder-info">
+                          <div className="folder-icon" style={{ backgroundColor: folder.color || '#666666' }}>
+                            <Folder size={16} />
+                          </div>
+                          <span className="folder-name">{folder.name}</span>
+                        </div>
+                        
+                        <div className="folder-actions">
+                          <span className="delete-date">
+                            {new Date(folder.deletedAt).toLocaleDateString()}
+                          </span>
+                          
+                          <div className="action-buttons">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (restoreFromTrash) restoreFromTrash(folder.id)
+                              }}
+                              className="action-btn restore"
+                              title="Restaurar carpeta"
+                            >
+                              <RotateCcw size={12} />
+                            </button>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (permanentlyDelete) permanentlyDelete(folder.id)
+                              }}
+                              className="action-btn delete permanent"
+                              title="Eliminar permanentemente"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <span className="folder-name">{folder.name}</span>
-                  </div>
-                  
-                  <div className="folder-actions">
-                    <span className="delete-date">
-                      {new Date(folder.deletedAt).toLocaleDateString()}
-                    </span>
-                    
-                    <div className="action-buttons">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (restoreFromTrash) restoreFromTrash(folder.id)
-                        }}
-                        className="action-btn restore"
-                        title="Restaurar carpeta"
-                      >
-                        <RotateCcw size={12} />
-                      </button>
-                      
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (permanentlyDelete) permanentlyDelete(folder.id)
-                        }}
-                        className="action-btn delete permanent"
-                        title="Eliminar permanentemente"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              </div>
-            ))
+              )}
+
+              {/* Notas eliminadas */}
+              {deletedNotes.length > 0 && (
+                <div className="trash-section">
+                  <h4 className="trash-section-title">Notas</h4>
+                  {deletedNotes.map(note => (
+                    <div key={note.id} className="folder-container">
+                      <div className="folder-item deleted note-item">
+                        <div className="folder-info">
+                          <div className="folder-icon note-icon">
+                            <FileText size={16} />
+                          </div>
+                          <div className="note-info">
+                            <span className="folder-name">{note.title}</span>
+                            <span className="note-folder">📁 {getFolderName(note.originalFolderId)}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="folder-actions">
+                          <span className="delete-date">
+                            {new Date(note.deletedAt).toLocaleDateString()}
+                          </span>
+                          
+                          <div className="action-buttons">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (restoreNoteFromTrash) restoreNoteFromTrash(note.id)
+                              }}
+                              className="action-btn restore"
+                              title="Restaurar nota"
+                            >
+                              <RotateCcw size={12} />
+                            </button>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                if (permanentlyDeleteNote) permanentlyDeleteNote(note.id)
+                              }}
+                              className="action-btn delete permanent"
+                              title="Eliminar permanentemente"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -240,14 +361,35 @@ const Sidebar = ({
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2 className="sidebar-title">Carpetas</h2>
+        <div className="header-content">
+          <h2 className="sidebar-title">Carpetas</h2>
+          <div className="header-actions">
+            <button 
+              onClick={createNewFolder} 
+              className="header-btn" 
+              title="Nueva Carpeta"
+            >
+              <FolderPlus size={16} />
+            </button>
+            <button 
+              onClick={() => setShowTrash(!showTrash)} 
+              className={`header-btn ${showTrash ? 'active' : ''}`} 
+              title="Papelera"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="folders-list">
         {/* Opción "Todas las notas" */}
         <div 
-          className={`folder-item ${selectedFolder === null ? 'active' : ''}`}
+          className={`folder-item ${selectedFolder === null ? 'active' : ''} ${dragOverFolder === null ? 'drag-over' : ''}`}
           onClick={() => setSelectedFolder(null)}
+          onDragOver={(e) => handleDragOver(e, null)}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, null)}
         >
           <div className="folder-info">
             <div className="folder-icon" style={{ backgroundColor: '#666666' }}>
@@ -259,75 +401,135 @@ const Sidebar = ({
         </div>
 
         {/* Lista de carpetas */}
-        {folders.map(folder => (
-          <div key={folder.id} className="folder-container">
-            <div 
-              className={`folder-item ${selectedFolder === folder.id ? 'active' : ''}`}
-              onClick={() => setSelectedFolder(folder.id)}
-            >
-              <div className="folder-info">
-                <div className="folder-icon" style={{ backgroundColor: folder.color || '#666666' }}>
-                  <Folder size={16} />
-                </div>
-                
-                {editingFolder === folder.id ? (
-                  <div className="edit-folder-input">
-                    <input
-                      type="text"
-                      value={editingName}
-                      onChange={(e) => setEditingName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveEdit()
-                        if (e.key === 'Escape') cancelEdit()
-                      }}
-                      onBlur={saveEdit}
-                      autoFocus
-                      className="folder-name-input"
-                    />
+        {folders.map(folder => {
+          const isExpanded = expandedFolders.has(folder.id)
+          const folderNotes = getFolderNotes(folder.id)
+          
+          return (
+            <div key={folder.id} className="folder-container">
+              <div 
+                className={`folder-item ${selectedFolder === folder.id ? 'active' : ''} ${dragOverFolder === folder.id ? 'drag-over' : ''}`}
+                onClick={() => handleFolderClick(folder.id)}
+                onDragOver={(e) => handleDragOver(e, folder.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, folder.id)}
+              >
+                <div className="folder-info">
+                  <div className="folder-expand-btn">
+                    {folderNotes.length > 0 && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleFolderExpansion(folder.id)
+                        }}
+                        className="expand-icon"
+                      >
+                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      </button>
+                    )}
                   </div>
-                ) : (
-                  <span className="folder-name">{folder.name}</span>
-                )}
+                  
+                  <div className="folder-icon" style={{ backgroundColor: folder.color || '#666666' }}>
+                    <Folder size={16} />
+                  </div>
+                  
+                  {editingFolder === folder.id ? (
+                    <div className="edit-folder-input">
+                      <input
+                        type="text"
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveEdit()
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                        onBlur={saveEdit}
+                        autoFocus
+                        className="folder-name-input"
+                      />
+                    </div>
+                  ) : (
+                    <span className="folder-name">{folder.name}</span>
+                  )}
+                </div>
+
+                <div className="folder-actions">
+                  <span className="notes-count">{getNotesCount(folder.id)}</span>
+                  
+                  <div className="action-buttons">
+                    <button
+                      onClick={(e) => openColorPicker(folder, e)}
+                      className="action-btn"
+                      title="Cambiar color"
+                    >
+                      <Palette size={12} />
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        startEditing(folder)
+                      }}
+                      className="action-btn"
+                      title="Editar nombre"
+                    >
+                      <Edit3 size={12} />
+                    </button>
+                    
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteFolder(folder)
+                      }}
+                      className="action-btn delete"
+                      title="Mover a papelera"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              <div className="folder-actions">
-                <span className="notes-count">{getNotesCount(folder.id)}</span>
-                
-                <div className="action-buttons">
-                  <button
-                    onClick={(e) => openColorPicker(folder, e)}
-                    className="action-btn"
-                    title="Cambiar color"
-                  >
-                    <Palette size={12} />
-                  </button>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      startEditing(folder)
-                    }}
-                    className="action-btn"
-                    title="Editar nombre"
-                  >
-                    <Edit3 size={12} />
-                  </button>
-                  
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteFolder(folder)
-                    }}
-                    className="action-btn delete"
-                    title="Mover a papelera"
-                  >
-                    <Trash2 size={12} />
-                  </button>
+              {/* Notas expandidas */}
+              {isExpanded && folderNotes.length > 0 && (
+                <div className="folder-notes">
+                  {folderNotes.map(note => (
+                    <div 
+                      key={note.id} 
+                      className={`folder-note-item ${selectedNote === note.id ? 'selected' : ''}`}
+                      onClick={() => onNoteSelect(note.id)}
+                    >
+                      <div className="note-icon">
+                        <FileText size={12} />
+                      </div>
+                      <span className="note-title" title={note.title}>
+                        {note.title.length > 25 ? `${note.title.substring(0, 25)}...` : note.title}
+                      </span>
+                      <span className="note-date">
+                        {new Date(note.updatedAt).toLocaleDateString('es-ES', { 
+                          day: '2-digit', 
+                          month: '2-digit' 
+                        })}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
+
+        {/* Botón Nueva Nota */}
+        <div className="new-note-section">
+          <button 
+            onClick={createNewNote} 
+            className="btn-new-note" 
+            title="Crear nueva nota"
+          >
+            <Plus size={16} />
+            Nueva Nota
+          </button>
+        </div>
       </div>
 
       {/* Color Picker Mejorado */}

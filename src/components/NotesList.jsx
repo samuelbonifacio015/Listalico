@@ -1,24 +1,27 @@
-import { CheckSquare, Square, AlertCircle, Clock, Star, Trash2, Plus, FileText, Sparkles } from 'lucide-react'
+import { CheckSquare, Square, AlertCircle, Clock, Star, Trash2, Plus, FileText, Sparkles, Search, Calendar, Tag, CheckCircle, Circle, Folder } from 'lucide-react'
+import { useState } from 'react'
 
-const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, setNotes }) => {
+const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, onNoteDoubleClick, setNotes, folders, showPreview, onDeleteNote = () => {} }) => {
+  const [draggedNote, setDraggedNote] = useState(null)
+  const [sortBy, setSortBy] = useState('updatedAt')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [filterBy, setFilterBy] = useState('all')
+
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     const now = new Date()
+    const diffTime = Math.abs(now - date)
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 1) return 'Hoy'
+    if (diffDays === 2) return 'Ayer'
+    if (diffDays <= 7) return `Hace ${diffDays - 1} días`
     
-    const options = {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    }
-    
-    // Agregar año solo si es diferente al actual
-    if (date.getFullYear() !== now.getFullYear()) {
-      options.year = 'numeric'
-    }
-    
-    return date.toLocaleDateString('es-ES', options)
+    return date.toLocaleDateString('es-ES', { 
+      day: '2-digit', 
+      month: '2-digit',
+      year: '2-digit'
+    })
   }
 
   const getPriorityIcon = (priority) => {
@@ -63,7 +66,32 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
 
   const openNote = (note) => {
     setSelectedNote(note.id)
-    setShowNoteEditor(true)
+  }
+
+  const handleDoubleClick = (note, e) => {
+    e.stopPropagation()
+    if (onNoteDoubleClick) {
+      onNoteDoubleClick(note.id)
+    }
+  }
+
+  // Funciones de drag and drop
+  const handleDragStart = (e, note) => {
+    setDraggedNote(note)
+    e.dataTransfer.setData('text/plain', note.id.toString())
+    e.dataTransfer.effectAllowed = 'move'
+    
+    // Agregar clase visual
+    setTimeout(() => {
+      if (e.target) {
+        e.target.classList.add('dragging')
+      }
+    }, 0)
+  }
+
+  const handleDragEnd = (e) => {
+    setDraggedNote(null)
+    e.target.classList.remove('dragging')
   }
 
   const createNewNote = () => {
@@ -85,30 +113,63 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
   }
 
   const getPreviewText = (content) => {
-    const plainText = content.replace(/<[^>]*>/g, '').replace(/\n+/g, ' ')
-    return plainText.length > 100 ? plainText.substring(0, 100) + '...' : plainText
+    if (!content) return 'Sin contenido'
+    return content.length > 80 ? content.substring(0, 80) + '...' : content
   }
 
-  const sortedNotes = [...notes].sort((a, b) => {
-    // Primero por completado (tareas incompletas primero)
-    if (a.isTask && b.isTask) {
-      if (a.completed !== b.completed) {
-        return a.completed ? 1 : -1
+  const getFolderName = (folderId) => {
+    if (!folderId) return 'Sin carpeta'
+    const folder = folders?.find(f => f.id === folderId)
+    return folder ? folder.name : 'Sin carpeta'
+  }
+
+  const getFolderColor = (folderId) => {
+    if (!folderId) return '#666666'
+    const folder = folders.find(f => f.id === folderId)
+    return folder?.color || '#666666'
+  }
+
+  const sortedAndFilteredNotes = notes
+    .filter(note => {
+      if (filterBy === 'tasks') return note.isTask
+      if (filterBy === 'completed') return note.isTask && note.completed
+      if (filterBy === 'pending') return note.isTask && !note.completed
+      if (filterBy === 'notes') return !note.isTask
+      return true
+    })
+    .sort((a, b) => {
+      const multiplier = sortOrder === 'asc' ? 1 : -1
+      
+      if (sortBy === 'title') {
+        return a.title.localeCompare(b.title) * multiplier
       }
+      if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+        return (new Date(a[sortBy]) - new Date(b[sortBy])) * multiplier
+      }
+      if (sortBy === 'priority') {
+        const priorityOrder = { high: 3, medium: 2, low: 1 }
+        return (priorityOrder[a.priority] - priorityOrder[b.priority]) * multiplier
+      }
+      return 0
+    })
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(field)
+      setSortOrder('desc')
     }
-    
-    // Luego por prioridad
-    const priorityOrder = { high: 3, medium: 2, low: 1 }
-    const aPriority = priorityOrder[a.priority] || 0
-    const bPriority = priorityOrder[b.priority] || 0
-    
-    if (aPriority !== bPriority) {
-      return bPriority - aPriority
+  }
+
+  const getPriorityColor = (priority) => {
+    switch (priority) {
+      case 'high': return '#ff453a'
+      case 'medium': return '#ff9500'
+      case 'low': return '#34c759'
+      default: return '#8e8e93'
     }
-    
-    // Finalmente por fecha de actualización (más reciente primero)
-    return new Date(b.updatedAt) - new Date(a.updatedAt)
-  })
+  }
 
   if (notes.length === 0) {
     return (
@@ -163,12 +224,12 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
   }
 
   return (
-    <div className="notes-list">
+    <div className={`notes-list ${showPreview ? 'with-preview' : 'no-preview'}`}>
       <div className="notes-header enhanced">
         <div className="header-content">
           <h2 className="notes-title">
-            <span className="notes-count">{notes.length}</span>
-            <span className="notes-label">{notes.length === 1 ? 'nota' : 'notas'}</span>
+            <span className="notes-count">{sortedAndFilteredNotes.length}</span>
+            <span className="notes-label">{sortedAndFilteredNotes.length === 1 ? 'nota' : 'notas'}</span>
           </h2>
           
           <div className="header-stats">
@@ -182,14 +243,51 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
             </div>
           </div>
         </div>
+
+        <div className="notes-controls">
+          <div className="filter-controls">
+            <select 
+              value={filterBy} 
+              onChange={(e) => setFilterBy(e.target.value)}
+              className="filter-select"
+            >
+              <option value="all">Todas</option>
+              <option value="notes">Solo Notas</option>
+              <option value="tasks">Solo Tareas</option>
+              <option value="pending">Pendientes</option>
+              <option value="completed">Completadas</option>
+            </select>
+
+            <select 
+              value={`${sortBy}-${sortOrder}`} 
+              onChange={(e) => {
+                const [field, order] = e.target.value.split('-')
+                setSortBy(field)
+                setSortOrder(order)
+              }}
+              className="sort-select"
+            >
+              <option value="updatedAt-desc">Más recientes</option>
+              <option value="updatedAt-asc">Más antiguas</option>
+              <option value="title-asc">A-Z</option>
+              <option value="title-desc">Z-A</option>
+              <option value="priority-desc">Prioridad alta</option>
+              <option value="priority-asc">Prioridad baja</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="notes-container enhanced">
-        {sortedNotes.map(note => (
+        {sortedAndFilteredNotes.map(note => (
           <div
             key={note.id}
             className={`note-item enhanced ${selectedNote === note.id ? 'selected' : ''} ${note.completed ? 'completed' : ''}`}
             onClick={() => openNote(note)}
+            onDoubleClick={(e) => handleDoubleClick(note, e)}
+            draggable
+            onDragStart={(e) => handleDragStart(e, note)}
+            onDragEnd={handleDragEnd}
           >
             <div className="note-header">
               <div className="note-title-section">
@@ -214,7 +312,10 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
               <div className="note-actions">
                 {getPriorityIcon(note.priority)}
                 <button
-                  onClick={(e) => deleteNote(note.id, e)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteNote(note.id)
+                  }}
                   className="delete-btn"
                   title="Eliminar nota"
                 >
@@ -238,6 +339,10 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
                     {getPriorityText(note.priority)}
                   </span>
                 )}
+
+                <span className="folder-badge enhanced">
+                  📁 {getFolderName(note.folderId)}
+                </span>
 
                 {note.categories.length > 0 && (
                   <div className="categories enhanced">
