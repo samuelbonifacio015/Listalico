@@ -242,6 +242,7 @@ function App() {
               notes={notes}
               setNotes={setNotes}
               folders={folders}
+              setFolders={setFolders}
               onClose={() => setShowNoteEditor(false)}
             />
           )}

@@ -1,24 +1,24 @@
-import { CheckSquare, Square, AlertCircle, Clock, Star, Trash2 } from 'lucide-react'
+import { CheckSquare, Square, AlertCircle, Clock, Star, Trash2, Plus, FileText, Sparkles } from 'lucide-react'
 
 const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, setNotes }) => {
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffInHours = (now - date) / (1000 * 60 * 60)
     
-    if (diffInHours < 1) {
-      return 'Hace un momento'
-    } else if (diffInHours < 24) {
-      return `Hace ${Math.floor(diffInHours)} horas`
-    } else if (diffInHours < 48) {
-      return 'Ayer'
-    } else {
-      return date.toLocaleDateString('es-ES', { 
-        day: 'numeric', 
-        month: 'short',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-      })
+    const options = {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
     }
+    
+    // Agregar año solo si es diferente al actual
+    if (date.getFullYear() !== now.getFullYear()) {
+      options.year = 'numeric'
+    }
+    
+    return date.toLocaleDateString('es-ES', options)
   }
 
   const getPriorityIcon = (priority) => {
@@ -66,6 +66,24 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
     setShowNoteEditor(true)
   }
 
+  const createNewNote = () => {
+    const newNote = {
+      id: Date.now(),
+      title: 'Nueva Nota',
+      content: '',
+      folderId: null,
+      priority: 'medium',
+      categories: [],
+      isTask: false,
+      completed: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    setNotes(prev => [newNote, ...prev])
+    setSelectedNote(newNote.id)
+    setShowNoteEditor(true)
+  }
+
   const getPreviewText = (content) => {
     const plainText = content.replace(/<[^>]*>/g, '').replace(/\n+/g, ' ')
     return plainText.length > 100 ? plainText.substring(0, 100) + '...' : plainText
@@ -95,10 +113,50 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
   if (notes.length === 0) {
     return (
       <div className="notes-list empty">
-        <div className="empty-state">
-          <div className="empty-icon">📝</div>
-          <h3>No hay notas</h3>
-          <p>Crea tu primera nota para empezar</p>
+        <div className="empty-state enhanced">
+          <div className="welcome-animation">
+            <div className="floating-icons">
+              <FileText className="icon-1" size={24} />
+              <Plus className="icon-2" size={20} />
+              <Sparkles className="icon-3" size={18} />
+            </div>
+          </div>
+          
+          <div className="welcome-content">
+            <h3>¡Bienvenido a Listalico! 🚀</h3>
+            <p>Tu espacio personal para organizar ideas, tareas y proyectos</p>
+            
+            <div className="features-grid">
+              <div className="feature-item">
+                <div className="feature-icon">📝</div>
+                <span>Notas rápidas</span>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">✅</div>
+                <span>Lista de tareas</span>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">📁</div>
+                <span>Organiza en carpetas</span>
+              </div>
+              <div className="feature-item">
+                <div className="feature-icon">🎨</div>
+                <span>Personaliza colores</span>
+              </div>
+            </div>
+            
+            <button 
+              onClick={createNewNote}
+              className="btn-start-journey"
+            >
+              <Plus size={16} />
+              Crear mi primera nota
+            </button>
+            
+            <div className="tips">
+              <p className="tip">💡 <strong>Tip:</strong> Usa <kbd>Ctrl</kbd> + <kbd>Enter</kbd> para guardar rápidamente</p>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -106,17 +164,31 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
 
   return (
     <div className="notes-list">
-      <div className="notes-header">
-        <h2 className="notes-title">
-          {notes.length} {notes.length === 1 ? 'nota' : 'notas'}
-        </h2>
+      <div className="notes-header enhanced">
+        <div className="header-content">
+          <h2 className="notes-title">
+            <span className="notes-count">{notes.length}</span>
+            <span className="notes-label">{notes.length === 1 ? 'nota' : 'notas'}</span>
+          </h2>
+          
+          <div className="header-stats">
+            <div className="stat-item">
+              <span className="stat-value">{notes.filter(n => n.isTask && !n.completed).length}</span>
+              <span className="stat-label">pendientes</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-value">{notes.filter(n => n.isTask && n.completed).length}</span>
+              <span className="stat-label">completadas</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="notes-container">
+      <div className="notes-container enhanced">
         {sortedNotes.map(note => (
           <div
             key={note.id}
-            className={`note-item ${selectedNote === note.id ? 'selected' : ''} ${note.completed ? 'completed' : ''}`}
+            className={`note-item enhanced ${selectedNote === note.id ? 'selected' : ''} ${note.completed ? 'completed' : ''}`}
             onClick={() => openNote(note)}
           >
             <div className="note-header">
@@ -127,7 +199,7 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
                       e.stopPropagation()
                       toggleTask(note.id)
                     }}
-                    className="task-checkbox"
+                    className="task-checkbox enhanced"
                   >
                     {note.completed ? 
                       <CheckSquare size={16} className="checked" /> : 
@@ -152,25 +224,25 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
             </div>
 
             {note.content && (
-              <p className="note-preview">{getPreviewText(note.content)}</p>
+              <p className="note-preview enhanced">{getPreviewText(note.content)}</p>
             )}
 
-            <div className="note-meta">
+            <div className="note-meta enhanced">
               <div className="note-details">
                 {note.isTask && (
-                  <span className="note-type">Tarea</span>
+                  <span className="note-type enhanced">Tarea</span>
                 )}
                 
                 {note.priority && (
-                  <span className={`priority-badge ${note.priority}`}>
+                  <span className={`priority-badge enhanced ${note.priority}`}>
                     {getPriorityText(note.priority)}
                   </span>
                 )}
 
                 {note.categories.length > 0 && (
-                  <div className="categories">
+                  <div className="categories enhanced">
                     {note.categories.slice(0, 2).map((category, index) => (
-                      <span key={index} className="category-tag">
+                      <span key={index} className="category-tag enhanced">
                         {category}
                       </span>
                     ))}
@@ -183,7 +255,7 @@ const NotesList = ({ notes, selectedNote, setSelectedNote, setShowNoteEditor, se
                 )}
               </div>
 
-              <time className="note-date" title={new Date(note.updatedAt).toLocaleString('es-ES')}>
+              <time className="note-date enhanced" title={new Date(note.updatedAt).toLocaleString('es-ES')}>
                 {formatDate(note.updatedAt)}
               </time>
             </div>
