@@ -64,31 +64,6 @@ Una aplicación minimalista de notas y tareas inspirada en el diseño de Apple, 
 - **CSS Variables**: Sistema de diseño escalable
 - **LocalStorage API**: Persistencia de datos del lado del cliente
 
-## 🛠️ Instalación y Uso
-
-### Prerrequisitos
-
-- Node.js (versión 16 o superior)
-- npm o yarn
-
-### Instalación
-
-```bash
-# Clonar el repositorio
-git clone [url-del-repositorio]
-
-# Navegar al directorio
-cd listalico
-
-# Instalar dependencias
-npm install
-
-# Ejecutar en desarrollo
-npm run dev
-
-# Construir para producción
-npm run build
-```
 
 ### Uso
 
@@ -98,13 +73,6 @@ npm run build
 4. **Agregar categorías**: Etiqueta tus notas para encontrarlas fácilmente
 5. **Exportar/Importar**: Respalda tus datos usando las opciones de exportación
 
-## 📱 Responsive Design
-
-Listalico está completamente optimizado para:
-
-- **Desktop**: Experiencia completa con tres paneles
-- **Tablet**: Layout adaptativo para pantallas medianas
-- **Móvil**: Interfaz táctil optimizada para smartphones
 
 ## 🔮 Características Futuras
 
@@ -114,26 +82,6 @@ Listalico está completamente optimizado para:
 - **Temas personalizables**: Más opciones de personalización visual
 - **Markdown support**: Formato avanzado de texto
 - **Adjuntos**: Soporte para imágenes y archivos
-
-## 🤝 Contribuir
-
-¡Las contribuciones son bienvenidas! Si tienes ideas para mejorar Listalico:
-
-1. Fork el proyecto
-2. Crea una rama para tu función (`git checkout -b feature/nueva-funcion`)
-3. Commit tus cambios (`git commit -m 'Agregar nueva función'`)
-4. Push a la rama (`git push origin feature/nueva-funcion`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
-
-## 🙏 Reconocimientos
-
-- **Fuentes**: [Satoshi](https://www.fontshare.com/fonts/satoshi) por Fontshare
-- **Iconos**: [Lucide](https://lucide.dev/) por el hermoso set de iconos
-- **Inspiración**: Apple por su filosofía de diseño minimalista
 
 ---
 
