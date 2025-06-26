@@ -868,6 +868,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
 .sidebar-header {
@@ -1325,9 +1326,11 @@ body {
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-lg);
   padding: 16px;
-  width: 280px;
+  width: 300px;
+  max-width: calc(100vw - 20px);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  position: absolute;
 }
 
 .color-picker-header {
@@ -3404,6 +3407,17 @@ body {
   padding: 0;
   color: var(--text-secondary);
   min-width: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.folder-color-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
 }
 
 .folder-note-item .note-title {
@@ -3838,3 +3852,99 @@ body {
     padding: 10px 12px;
     font-size: 13px;
   }
+
+  /* Color Picker Responsivo */
+  .advanced-color-picker {
+    width: 280px;
+    max-width: calc(100vw - 20px);
+    padding: 12px;
+  }
+
+  .color-picker-header h4 {
+    font-size: 0.8rem;
+  }
+
+  .color-preview {
+    width: 28px;
+    height: 28px;
+  }
+
+  .preset-colors {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .color-button {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sl-picker-area {
+    height: 100px;
+  }
+
+  .hue-slider {
+    height: 14px;
+  }
+
+  .color-values {
+    gap: 2px;
+  }
+
+  .color-hex {
+    font-size: 0.8rem;
+  }
+
+  .color-hsl {
+    font-size: 0.7rem;
+  }
+
+  .btn-cancel,
+  .btn-apply {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .advanced-color-picker {
+    width: 260px;
+    padding: 10px;
+    max-width: calc(100vw - 10px);
+  }
+
+  .preset-colors {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+  }
+
+  .color-button {
+    width: 24px;
+    height: 24px;
+  }
+
+  .sl-picker-area {
+    height: 80px;
+  }
+
+  .hue-slider {
+    height: 12px;
+  }
+
+  .color-picker-actions {
+    gap: 6px;
+  }
+
+  .color-picker-header {
+    margin-bottom: 12px;
+  }
+
+  .color-picker-header h4 {
+    font-size: 0.75rem;
+  }
+
+  .color-preview {
+    width: 24px;
+    height: 24px;
+  }
+}

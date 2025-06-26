@@ -114,10 +114,30 @@ const Sidebar = ({
   const openColorPicker = (folder, event) => {
     event.stopPropagation()
     const rect = event.currentTarget.getBoundingClientRect()
-    setPickerPosition({ 
-      x: Math.max(10, rect.left - 280), 
-      y: rect.top 
-    })
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const pickerWidth = 300 // Ancho estimado del color picker
+    const pickerHeight = 400 // Altura estimada del color picker
+    
+    // Calcular posición X (horizontal)
+    let x = rect.right + 10 // Intentar mostrar a la derecha del botón
+    if (x + pickerWidth > viewportWidth) {
+      x = rect.left - pickerWidth - 10 // Si no cabe, mostrar a la izquierda
+    }
+    if (x < 10) {
+      x = 10 // Si tampoco cabe a la izquierda, alinear al borde
+    }
+    
+    // Calcular posición Y (vertical)
+    let y = rect.top + window.scrollY
+    if (rect.top + pickerHeight > viewportHeight) {
+      y = rect.bottom + window.scrollY - pickerHeight // Si no cabe abajo, mostrar arriba
+    }
+    if (y < window.scrollY + 10) {
+      y = window.scrollY + 10 // Si tampoco cabe arriba, alinear al borde superior visible
+    }
+    
+    setPickerPosition({ x, y })
     
     const [h, s, l] = hexToHsl(folder.color)
     setHue(h)
@@ -189,7 +209,7 @@ const Sidebar = ({
     toggleFolderExpansion(folderId)
   }
 
-  // Cerrar color picker al hacer clic fuera
+  // Cerrar color picker al hacer clic fuera y manejar scroll
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (colorPickerRef.current && !colorPickerRef.current.contains(event.target)) {
@@ -197,9 +217,27 @@ const Sidebar = ({
       }
     }
 
+    const handleScroll = () => {
+      if (showColorPicker) {
+        setShowColorPicker(null) // Cerrar el color picker al hacer scroll
+      }
+    }
+
+    const handleResize = () => {
+      if (showColorPicker) {
+        setShowColorPicker(null) // Cerrar el color picker al redimensionar
+      }
+    }
+
     if (showColorPicker) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      window.addEventListener('scroll', handleScroll)
+      window.addEventListener('resize', handleResize)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        window.removeEventListener('scroll', handleScroll)
+        window.removeEventListener('resize', handleResize)
+      }
     }
   }, [showColorPicker])
 
@@ -500,6 +538,10 @@ const Sidebar = ({
                       onClick={() => onNoteSelect(note.id)}
                     >
                       <div className="note-icon">
+                        <div 
+                          className="folder-color-indicator"
+                          style={{ backgroundColor: folder.color || '#666666' }}
+                        />
                         <FileText size={12} />
                       </div>
                       <span className="note-title" title={note.title}>
@@ -538,7 +580,7 @@ const Sidebar = ({
           ref={colorPickerRef}
           className="advanced-color-picker"
           style={{
-            position: 'fixed',
+            position: 'absolute',
             left: pickerPosition.x,
             top: pickerPosition.y,
             zIndex: 1000
