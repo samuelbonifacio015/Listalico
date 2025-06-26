@@ -1,88 +1,68 @@
-# 📝 Listalico
+<p align = "center">
+<img src="https://github.com/samuelbonifacio015/Listalico/raw/main/src/assets/img/listalico-logo.png">
+</p>
 
-Una aplicación minimalista de notas y tareas inspirada en el diseño de Apple, construida con React y diseñada para simplificar la manera en que escribes notas y administras tus tareas.
+# [Listalico](https://listalico.vercel.app/)
 
-## ✨ Características
+Una aplicación minimalista para escribir notas y tareas, diseñada para simplificar la manera en la que escribes notas y administras tus tareas.
 
-### 🗂️ Organización Inteligente
+## Screenshots
 
-- **Carpetas personalizables**: Organiza tus notas en carpetas con colores personalizados
-- **Colores hexadecimales**: Personaliza cada carpeta con códigos de color hex
-- **Vista "Todas las notas"**: Accede rápidamente a todas tus notas desde un solo lugar
+![Welcome](https://github.com/samuelbonifacio015/Listalico/raw/main/src/assets/img/welcome.png)
+![Editor Modal](https://github.com/samuelbonifacio015/Listalico/raw/main/src/assets/img/editor-modal.png)
 
-### 📋 Notas y Tareas
+## 🚀 Funcionalidades
 
-- **Notas tradicionales**: Para ideas, pensamientos y información general
-- **Lista de tareas**: Convierte cualquier nota en una tarea con checkbox
-- **Estados de completado**: Marca tareas como completadas o pendientes
+### ✨ Editor de Notas Avanzado
+- **Editor rico en texto** con soporte para formateo
+- **Guardado automático** de tus notas mientras escribes
+- **Vista previa en tiempo real** del contenido
 
-### 🎯 Sistema de Prioridades
+### 🎨 Personalización Visual
+![Hexadecimal Color Picker](https://github.com/samuelbonifacio015/Listalico/raw/main/src/assets/img/hexademical-color.png)
 
-- **Alta prioridad**: Para tareas urgentes e importantes
-- **Prioridad media**: Para tareas regulares
-- **Baja prioridad**: Para tareas no urgentes
+- **Color picker hexadecimal** para personalizar carpetas con tu color favorito
+- **Interfaz minimalista** diseñada para una mejor experiencia de usuario
+- **Tema responsive** que se adapta a cualquier dispositivo
 
-### 🏷️ Categorización
+### 📁 Organización Inteligente
+- **Creación de carpetas** para organizar tus notas por categorías
+- **Sistema de etiquetas** para clasificar contenido
+- **Búsqueda rápida** entre todas tus notas
 
-- **Categorías dinámicas**: Agrega categorías personalizadas a cualquier nota
-- **Búsqueda por categorías**: Encuentra notas rápidamente usando categorías
-- **Gestión flexible**: Agrega o elimina categorías según necesites
+### 💾 Almacenamiento Local
+- **Persistencia de datos** en tu navegador
+- **Sin necesidad de registro** - funciona offline
+- **Exportación de notas** en diferentes formatos
 
-### 🔍 Búsqueda Avanzada
+## 🎯 Release v1.0
 
-- **Búsqueda en tiempo real**: Encuentra notas mientras escribes
-- **Múltiples campos**: Busca en títulos, contenido y categorías
-- **Resultados instantáneos**: Sin necesidad de recargar la página
+### Características principales incluidas:
+- ✅ **Editor de notas completo** con interfaz intuitiva
+- ✅ **Sistema de carpetas personalizables** con colores hexadecimales
+- ✅ **Almacenamiento local persistente**
+- ✅ **Vista previa de notas en tiempo real**
+- ✅ **Interfaz responsive y minimalista**
+- ✅ **Modal de edición avanzado**
 
-### 💾 Gestión de Datos
+### Instalación
+```bash
+# Clonar el repositorio
+git clone https://github.com/samuelbonifacio015/Listalico.git
 
-- **Almacenamiento local**: Tus datos se guardan automáticamente en tu navegador
-- **Exportar a JSON**: Respalda todas tus notas y carpetas
-- **Importar desde JSON**: Restaura tus datos desde un archivo de respaldo
-- **Sincronización automática**: Los cambios se guardan instantáneamente
+# Navegar al directorio
+cd Listalico
 
-## 🎨 Diseño
+# Instalar dependencias
+npm install
 
-### Inspiración Apple
-
-- **UI minimalista**: Interfaz limpia y sin distracciones
-- **Fuente Satoshi**: Tipografía moderna y elegante
-- **Efectos glassmorphism**: Elementos con efecto de cristal translúcido
-- **Animaciones suaves**: Transiciones fluidas y naturales
-
-### Paleta de Colores Oscura
-
-- **Tema oscuro nativo**: Diseñado específicamente para condiciones de poca luz
-- **Contrastes cuidados**: Excelente legibilidad en todos los elementos
-- **Acentos de color**: Colores vibrantes para elementos interactivos
-
-## 🚀 Tecnologías
-
-- **React 18**: Framework principal con hooks modernos
-- **Vite**: Herramientas de desarrollo rápidas
-- **Lucide React**: Iconografía consistente y hermosa
-- **CSS Variables**: Sistema de diseño escalable
-- **LocalStorage API**: Persistencia de datos del lado del cliente
-
-
-### Uso
-
-1. **Crear carpetas**: Usa el botón de carpeta para organizar tus notas
-2. **Nueva nota**: Haz clic en "Nueva Nota" para empezar a escribir
-3. **Configurar prioridad**: Asigna prioridades a tus tareas importantes
-4. **Agregar categorías**: Etiqueta tus notas para encontrarlas fácilmente
-5. **Exportar/Importar**: Respalda tus datos usando las opciones de exportación
-
-
-## 🔮 Características Futuras
-
-- **Sincronización en la nube**: Accede a tus notas desde cualquier dispositivo
-- **Modo colaborativo**: Comparte carpetas con otros usuarios
-- **Recordatorios**: Notificaciones para tareas importantes
-- **Temas personalizables**: Más opciones de personalización visual
-- **Markdown support**: Formato avanzado de texto
-- **Adjuntos**: Soporte para imágenes y archivos
+# Iniciar servidor de desarrollo
+npm run dev
+```
 
 ---
 
-**Desarrollado con ❤️ para simplificar tu productividad**
+⭐ desarrollado por -> **Samuel Bonifacio** - [@samuelbonifacio015](https://github.com/samuelbonifacio015) ⭐
+
+
+---
