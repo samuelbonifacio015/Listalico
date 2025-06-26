@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, FolderPlus, Download, Upload, Trash2 } from 'lucide-react'
+import { Plus, Search, FolderPlus, Download, Upload, Trash2, Sparkles, BookOpen, Github, Heart, Menu, X } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import NotesList from './components/NotesList'
 import NoteEditor from './components/NoteEditor'
@@ -27,6 +27,7 @@ function App() {
   const [showTrash, setShowTrash] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState(new Set())
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   
   // Estados para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({
@@ -317,34 +318,156 @@ function App() {
     <div className="app">
       <div className="app-header">
         <div className="header-left">
-          <h1 className="app-title">Listalico</h1>
+          <div className="app-title-container">
+            <div className="app-logo">
+              <BookOpen size={24} className="logo-icon" />
+              <Sparkles size={16} className="sparkle-icon" />
+            </div>
+            <h1 className="app-title">
+              Listalico
+              <span className="title-subtitle">Tu espacio de notas</span>
+            </h1>
+          </div>
           <div className="search-container">
-            <Search size={16} />
+            <Search size={16} className="search-icon" />
             <input
               type="text"
-              placeholder="Buscar notas..."
+              placeholder="Buscar en tus notas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
+            <div className="search-stats">
+              {searchTerm && (
+                <span className="search-results">
+                  {filteredNotes.length} resultado{filteredNotes.length !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         
         <div className="header-actions">
-          <button onClick={exportData} className="btn btn-secondary" title="Exportar datos">
-            <Download size={16} />
+          <div className="action-group">
+            <button 
+              onClick={createNewNote} 
+              className="btn btn-primary create-note-btn" 
+              title="Nueva nota"
+            >
+              <Plus size={16} />
+              <span>Nueva nota</span>
+            </button>
+            <button 
+              onClick={createNewFolder} 
+              className="btn btn-secondary" 
+              title="Nueva carpeta"
+            >
+              <FolderPlus size={16} />
+            </button>
+          </div>
+          <div className="action-group">
+            <button onClick={exportData} className="btn btn-secondary" title="Exportar datos">
+              <Download size={16} />
+              <span className="btn-text">Exportar</span>
+            </button>
+            <label className="btn btn-secondary" title="Importar datos">
+              <Upload size={16} />
+              <span className="btn-text">Importar</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={importData}
+                style={{ display: 'none' }}
+              />
+            </label>
+          </div>
+          <div className="stats-badge">
+            <span className="notes-count">{notes.length}</span>
+          </div>
+          
+          {/* Mobile menu button */}
+          <button 
+            className="mobile-menu-btn"
+            onClick={() => setShowMobileMenu(!showMobileMenu)}
+            title="Menú"
+          >
+            {showMobileMenu ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <label className="btn btn-secondary" title="Importar datos">
-            <Upload size={16} />
-            <input
-              type="file"
-              accept=".json"
-              onChange={importData}
-              style={{ display: 'none' }}
-            />
-          </label>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      {showMobileMenu && (
+        <div className="mobile-menu">
+          <div className="mobile-menu-content">
+            <div className="mobile-search">
+              <Search size={16} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Buscar en tus notas..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mobile-search-input"
+              />
+            </div>
+            
+            <div className="mobile-actions">
+              <button 
+                onClick={() => {
+                  createNewNote()
+                  setShowMobileMenu(false)
+                }} 
+                className="mobile-action-btn primary"
+              >
+                <Plus size={16} />
+                <span>Nueva nota</span>
+              </button>
+              
+              <button 
+                onClick={() => {
+                  createNewFolder()
+                  setShowMobileMenu(false)
+                }} 
+                className="mobile-action-btn"
+              >
+                <FolderPlus size={16} />
+                <span>Nueva carpeta</span>
+              </button>
+              
+              <button 
+                onClick={() => {
+                  exportData()
+                  setShowMobileMenu(false)
+                }} 
+                className="mobile-action-btn"
+              >
+                <Download size={16} />
+                <span>Exportar datos</span>
+              </button>
+              
+              <label 
+                className="mobile-action-btn"
+                onClick={() => setShowMobileMenu(false)}
+              >
+                <Upload size={16} />
+                <span>Importar datos</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importData}
+                  style={{ display: 'none' }}
+                />
+              </label>
+            </div>
+            
+            {searchTerm && (
+              <div className="mobile-search-results">
+                {filteredNotes.length} resultado{filteredNotes.length !== 1 ? 's' : ''} encontrado{filteredNotes.length !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="app-body">
         <Sidebar
@@ -431,6 +554,28 @@ function App() {
         confirmText={confirmModal.confirmText}
         cancelText="Cancelar"
       />
+
+      {/* Footer */}
+      <footer className="app-footer">
+        <div className="footer-content">
+          <div className="footer-left">
+            <span className="footer-text">desarrollado por samuelbonifacio</span>
+            <Heart size={14} className="heart-icon" />
+          </div>
+          <div className="footer-right">
+            <a 
+              href="https://github.com/samuelbonifacio015/Listalico/tree/main" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="github-link"
+              title="Ver código fuente en GitHub"
+            >
+              <Github size={16} />
+              <span>GitHub</span>
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

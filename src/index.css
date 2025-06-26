@@ -193,7 +193,625 @@ body {
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+/* Nuevos estilos para header mejorado */
+.app-title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, var(--color-accent), #0066cc);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+}
+
+.logo-icon {
+  color: white;
+  z-index: 2;
+}
+
+.sparkle-icon {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  color: #ffd700;
+  animation: sparkle 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5));
+}
+
+@keyframes sparkle {
+  0%, 100% { 
+    opacity: 0.7;
+    transform: scale(1) rotate(0deg);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.2) rotate(180deg);
+  }
+}
+
+.app-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  background: linear-gradient(90deg, var(--color-accent), #00d4ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
   gap: 8px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  padding: 12px 16px;
+  min-width: 350px;
+  transition: var(--transition);
+}
+
+.search-container:focus-within {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+}
+
+.search-icon {
+  color: var(--color-text-muted);
+  transition: var(--transition);
+}
+
+.search-container:focus-within .search-icon {
+  color: var(--color-accent);
+}
+
+.search-stats {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.search-results {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: var(--color-bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+.create-note-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px !important;
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+.create-note-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.create-note-btn:hover::before {
+  left: 100%;
+}
+
+.btn-text {
+  font-size: 0.875rem;
+  margin-left: 4px;
+}
+
+.stats-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, var(--color-accent), #0066cc);
+  border-radius: var(--border-radius-sm);
+  min-width: 50px;
+  height: 40px;
+}
+
+.notes-count {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+/* Mobile Menu Button */
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.mobile-menu-btn:hover {
+  background: var(--color-border);
+  transform: scale(1.05);
+}
+
+/* Mobile Menu */
+.mobile-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mobile-menu-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mobile-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  padding: 12px 16px;
+}
+
+.mobile-search-input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  width: 100%;
+}
+
+.mobile-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.mobile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mobile-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.mobile-action-btn:hover {
+  background: var(--color-border);
+  transform: translateY(-1px);
+}
+
+.mobile-action-btn.primary {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.mobile-action-btn.primary:hover {
+  background: var(--color-accent-hover);
+}
+
+.mobile-search-results {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  padding: 8px;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--color-border);
+}
+
+
+
+/* Footer styles */
+.app-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  background: var(--color-bg-secondary);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.heart-icon {
+  color: #ff4757;
+  animation: heartbeat 2s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 50%, 100% {
+    transform: scale(1);
+  }
+  25%, 75% {
+    transform: scale(1.1);
+  }
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition);
+  font-size: 0.875rem;
+  border: 1px solid transparent;
+}
+
+.github-link:hover {
+  color: var(--color-text-primary);
+  background: var(--color-bg-tertiary);
+  border-color: var(--color-border);
+  transform: translateY(-1px);
+}
+
+/* Responsive adjustments for tablets */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 12px 16px;
+    position: relative;
+  }
+  
+  .header-left {
+    gap: 16px;
+  }
+  
+  .search-container {
+    min-width: 250px;
+  }
+  
+  .action-group {
+    flex-wrap: wrap;
+  }
+  
+  .btn-text {
+    display: none;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+/* iPhone SE and small mobile devices (375px and below) */
+@media (max-width: 480px) {
+  .app-header {
+    padding: 12px 16px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+  }
+  
+  .header-left {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    justify-content: center;
+  }
+  
+  /* Centered title for mobile */
+  .app-title-container {
+    gap: 8px;
+  }
+  
+  .app-logo {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .logo-icon {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .sparkle-icon {
+    width: 12px;
+    height: 12px;
+    top: -1px;
+    right: -1px;
+  }
+  
+  .app-title {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+  
+  .title-subtitle {
+    font-size: 0.65rem;
+  }
+  
+  /* Hide desktop search and actions */
+  .search-container,
+  .action-group {
+    display: none;
+  }
+  
+  /* Show mobile menu button */
+  .mobile-menu-btn {
+    display: flex;
+    position: absolute;
+    right: 16px;
+  }
+  
+  .stats-badge {
+    position: absolute;
+    left: 16px;
+    min-width: 40px;
+    height: 32px;
+    padding: 4px 8px;
+  }
+  
+  .notes-count {
+    font-size: 1rem;
+  }
+  
+  /* Mobile menu adjustments */
+  .mobile-actions {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .mobile-action-btn {
+    padding: 14px 16px;
+    font-size: 0.9rem;
+  }
+  
+  /* App body adjustments */
+  .app-body {
+    flex-direction: column;
+    height: calc(100vh - 120px);
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  
+  .main-content {
+    flex: 1;
+    min-height: 0;
+  }
+  
+  .notes-list {
+    height: auto;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  
+  /* Footer adjustments */
+  .footer-content {
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 0;
+  }
+  
+  .footer-text {
+    font-size: 0.8rem;
+  }
+  
+  .github-link {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+  }
+}
+
+/* Extra small devices - iPhone SE Portrait (375x667) */
+@media (max-width: 375px) and (max-height: 667px) {
+  .app-header {
+    padding: 10px 12px;
+  }
+  
+  .app-title {
+    font-size: 1.1rem;
+  }
+  
+  .title-subtitle {
+    font-size: 0.6rem;
+  }
+  
+  .mobile-menu-content {
+    padding: 12px;
+    gap: 12px;
+  }
+  
+  .mobile-search {
+    padding: 10px 12px;
+  }
+  
+  .mobile-action-btn {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+  }
+  
+  .app-body {
+    height: calc(100vh - 110px);
+  }
+  
+  .sidebar {
+    max-height: 35vh;
+  }
+  
+  .notes-list {
+    max-height: 45vh;
+  }
+  
+  .note-item {
+    padding: 12px;
+  }
+  
+  .note-title {
+    font-size: 0.9rem;
+  }
+  
+  .note-preview {
+    font-size: 0.8rem;
+  }
+}
+
+/* iPhone SE Landscape and similar (667x375) */
+@media (max-width: 667px) and (max-height: 375px) {
+  .app-header {
+    padding: 8px 12px;
+  }
+  
+  .app-title {
+    font-size: 1rem;
+  }
+  
+  .title-subtitle {
+    display: none;
+  }
+  
+  .app-logo {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .mobile-menu-content {
+    padding: 10px;
+    gap: 10px;
+  }
+  
+  .mobile-actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  
+  .mobile-action-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .app-body {
+    height: calc(100vh - 90px);
+    flex-direction: row;
+  }
+  
+  .sidebar {
+    width: 250px;
+    height: 100%;
+    max-height: none;
+    border-right: 1px solid var(--color-border);
+    border-bottom: none;
+  }
+  
+  .main-content {
+    flex: 1;
+  }
+  
+  .notes-list {
+    height: 100%;
+    max-height: none;
+  }
 }
 
 .app-body {
