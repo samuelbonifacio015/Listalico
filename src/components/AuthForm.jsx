@@ -52,6 +52,38 @@ const AuthForm = ({ onSuccess }) => {
     return true
   }
 
+  const getErrorMessage = (error) => {
+    if (!error) return ''
+    
+    const errorMessage = error.message || error.toString()
+    
+    // Mensajes específicos para errores comunes de Supabase
+    if (errorMessage.includes('Invalid login credentials')) {
+      return 'Email o contraseña incorrectos. Verifica tus credenciales.'
+    }
+    if (errorMessage.includes('Email not confirmed')) {
+      return 'Por favor confirma tu email antes de iniciar sesión. Revisa tu bandeja de entrada.'
+    }
+    if (errorMessage.includes('User already registered')) {
+      return 'Este email ya está registrado. Intenta iniciar sesión en su lugar.'
+    }
+    if (errorMessage.includes('Password should be at least 6 characters')) {
+      return 'La contraseña debe tener al menos 6 caracteres.'
+    }
+    if (errorMessage.includes('Invalid email')) {
+      return 'Por favor ingresa un email válido.'
+    }
+    if (errorMessage.includes('Signup is disabled')) {
+      return 'El registro está temporalmente deshabilitado. Contacta al administrador.'
+    }
+    if (errorMessage.includes('Too many requests')) {
+      return 'Demasiados intentos. Espera unos minutos antes de intentar de nuevo.'
+    }
+    
+    // Mensaje genérico si no coincide con ninguno específico
+    return errorMessage
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -65,7 +97,8 @@ const AuthForm = ({ onSuccess }) => {
       if (isLogin) {
         const { data, error } = await signIn(formData.email, formData.password)
         if (error) {
-          setError(error.message)
+          console.error('Login error:', error) // Log para debugging
+          setError(getErrorMessage(error))
         } else {
           setSuccess('¡Inicio de sesión exitoso!')
           onSuccess?.()
@@ -77,12 +110,14 @@ const AuthForm = ({ onSuccess }) => {
           { full_name: formData.fullName }
         )
         if (error) {
-          setError(error.message)
+          console.error('Signup error:', error) // Log para debugging
+          setError(getErrorMessage(error))
         } else {
           setSuccess('¡Cuenta creada exitosamente! Revisa tu email para confirmar tu cuenta.')
         }
       }
     } catch (err) {
+      console.error('Unexpected error:', err) // Log para debugging
       setError('Ocurrió un error inesperado. Por favor intenta de nuevo.')
     } finally {
       setIsLoading(false)

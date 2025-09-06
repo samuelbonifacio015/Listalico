@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id)
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
@@ -46,6 +47,8 @@ export const AuthProvider = ({ children }) => {
   const signUp = async (email, password, userData = {}) => {
     try {
       setLoading(true)
+      console.log('Attempting to sign up with email:', email) // Debug log
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -54,9 +57,15 @@ export const AuthProvider = ({ children }) => {
         }
       })
       
-      if (error) throw error
+      if (error) {
+        console.error('Sign up error:', error) // Debug log
+        throw error
+      }
+      
+      console.log('Sign up successful:', data.user?.id) // Debug log
       return { data, error: null }
     } catch (error) {
+      console.error('Sign up failed:', error) // Debug log
       return { data: null, error }
     } finally {
       setLoading(false)
@@ -66,14 +75,22 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     try {
       setLoading(true)
+      console.log('Attempting to sign in with email:', email) // Debug log
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       })
       
-      if (error) throw error
+      if (error) {
+        console.error('Sign in error:', error) // Debug log
+        throw error
+      }
+      
+      console.log('Sign in successful:', data.user?.id) // Debug log
       return { data, error: null }
     } catch (error) {
+      console.error('Sign in failed:', error) // Debug log
       return { data: null, error }
     } finally {
       setLoading(false)

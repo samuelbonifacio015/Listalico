@@ -41,6 +41,7 @@ export const useUserData = () => {
   useEffect(() => {
     if (user) {
       userDataService.setUserId(user.id)
+      console.log('User authenticated:', user.id)
     }
   }, [user])
 
@@ -48,6 +49,9 @@ export const useUserData = () => {
   useEffect(() => {
     if (user && !authLoading && isOnline) {
       loadUserData()
+    } else if (user && !authLoading && !isOnline) {
+      // Si está offline pero autenticado, usar datos locales
+      console.log('Offline mode: using local data')
     }
   }, [user, authLoading, isOnline])
 
@@ -58,24 +62,38 @@ export const useUserData = () => {
       setSyncStatus('syncing')
       setSyncError(null)
 
+      console.log('Loading user data from server...') // Debug log
+
       const [serverFolders, serverNotes] = await Promise.all([
         userDataService.getFolders(),
         userDataService.getNotes()
       ])
 
+      console.log('Server data loaded:', { 
+        folders: serverFolders.length, 
+        notes: serverNotes.length 
+      }) // Debug log
+
       // Convert server data to local format
       const convertedFolders = userDataService.convertServerFolders(serverFolders)
       const convertedNotes = userDataService.convertServerNotes(serverNotes)
 
-      // Update local state
-      setLocalFolders(convertedFolders)
-      setLocalNotes(convertedNotes)
+      // Solo actualizar si hay datos del servidor, de lo contrario mantener datos locales
+      if (convertedFolders.length > 0 || convertedNotes.length > 0) {
+        setLocalFolders(convertedFolders)
+        setLocalNotes(convertedNotes)
+        console.log('Server data applied to local state')
+      } else {
+        console.log('No server data found, keeping local data')
+      }
+      
       setLastSync(new Date())
       setSyncStatus('success')
     } catch (error) {
       console.error('Error loading user data:', error)
       setSyncError(error.message)
       setSyncStatus('error')
+      // En caso de error, mantener datos locales
     }
   }
 
@@ -104,53 +122,43 @@ export const useUserData = () => {
   }
 
   const createFolder = async (folder) => {
+    // Siempre agregar a local primero para feedback inmediato
+    setLocalFolders(prev => [...prev, folder])
+    
     if (isOnline && user) {
       try {
         const serverFolder = await userDataService.createFolder(folder)
         const convertedFolder = userDataService.convertServerFolders([serverFolder])[0]
-        setLocalFolders(prev => [...prev, convertedFolder])
+        // Actualizar con el ID del servidor
+        setLocalFolders(prev => 
+          prev.map(f => f.id === folder.id ? convertedFolder : f)
+        )
+        console.log('Folder created on server:', convertedFolder.id)
       } catch (error) {
-        console.error('Error creating folder:', error)
-        // Fallback to local storage
-        setLocalFolders(prev => [...prev, folder])
+        console.error('Error creating folder on server:', error)
+        // Mantener la carpeta local aunque falle en el servidor
       }
-    } else {
-      // Offline mode - use local storage
-      setLocalFolders(prev => [...prev, folder])
     }
   }
 
   const updateFolder = async (folderId, updates) => {
+    // Actualizar local primero para feedback inmediato
+    setLocalFolders(prev => 
+      prev.map(folder => 
+        folder.id === folderId 
+          ? { ...folder, ...updates, updatedAt: new Date().toISOString() }
+          : folder
+      )
+    )
+    
     if (isOnline && user) {
       try {
         await userDataService.updateFolder(folderId, updates)
-        setLocalFolders(prev => 
-          prev.map(folder => 
-            folder.id === folderId 
-              ? { ...folder, ...updates, updatedAt: new Date().toISOString() }
-              : folder
-          )
-        )
+        console.log('Folder updated on server:', folderId)
       } catch (error) {
-        console.error('Error updating folder:', error)
-        // Fallback to local storage
-        setLocalFolders(prev => 
-          prev.map(folder => 
-            folder.id === folderId 
-              ? { ...folder, ...updates, updatedAt: new Date().toISOString() }
-              : folder
-          )
-        )
+        console.error('Error updating folder on server:', error)
+        // Los datos locales ya están actualizados
       }
-    } else {
-      // Offline mode - use local storage
-      setLocalFolders(prev => 
-        prev.map(folder => 
-          folder.id === folderId 
-            ? { ...folder, ...updates, updatedAt: new Date().toISOString() }
-            : folder
-        )
-      )
     }
   }
 
@@ -175,53 +183,43 @@ export const useUserData = () => {
   }
 
   const createNote = async (note) => {
+    // Siempre agregar a local primero para feedback inmediato
+    setLocalNotes(prev => [note, ...prev])
+    
     if (isOnline && user) {
       try {
         const serverNote = await userDataService.createNote(note)
         const convertedNote = userDataService.convertServerNotes([serverNote])[0]
-        setLocalNotes(prev => [convertedNote, ...prev])
+        // Actualizar con el ID del servidor
+        setLocalNotes(prev => 
+          prev.map(n => n.id === note.id ? convertedNote : n)
+        )
+        console.log('Note created on server:', convertedNote.id)
       } catch (error) {
-        console.error('Error creating note:', error)
-        // Fallback to local storage
-        setLocalNotes(prev => [note, ...prev])
+        console.error('Error creating note on server:', error)
+        // Mantener la nota local aunque falle en el servidor
       }
-    } else {
-      // Offline mode - use local storage
-      setLocalNotes(prev => [note, ...prev])
     }
   }
 
   const updateNote = async (noteId, updates) => {
+    // Actualizar local primero para feedback inmediato
+    setLocalNotes(prev => 
+      prev.map(note => 
+        note.id === noteId 
+          ? { ...note, ...updates, updatedAt: new Date().toISOString() }
+          : note
+      )
+    )
+    
     if (isOnline && user) {
       try {
         await userDataService.updateNote(noteId, updates)
-        setLocalNotes(prev => 
-          prev.map(note => 
-            note.id === noteId 
-              ? { ...note, ...updates, updatedAt: new Date().toISOString() }
-              : note
-          )
-        )
+        console.log('Note updated on server:', noteId)
       } catch (error) {
-        console.error('Error updating note:', error)
-        // Fallback to local storage
-        setLocalNotes(prev => 
-          prev.map(note => 
-            note.id === noteId 
-              ? { ...note, ...updates, updatedAt: new Date().toISOString() }
-              : note
-          )
-        )
+        console.error('Error updating note on server:', error)
+        // Los datos locales ya están actualizados
       }
-    } else {
-      // Offline mode - use local storage
-      setLocalNotes(prev => 
-        prev.map(note => 
-          note.id === noteId 
-            ? { ...note, ...updates, updatedAt: new Date().toISOString() }
-            : note
-        )
-      )
     }
   }
 
