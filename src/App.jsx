@@ -1,25 +1,40 @@
 import { useState } from 'react'
-import { Plus, Search, FolderPlus, Download, Upload, Trash2, Sparkles, BookOpen, Github, Heart, Menu, X } from 'lucide-react'
+import { Plus, Search, FolderPlus, Download, Upload, Trash2, Sparkles, BookOpen, Github, Heart, Menu, X, User, LogOut, Wifi, WifiOff, RefreshCw } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import NotesList from './components/NotesList'
 import NoteEditor from './components/NoteEditor'
 import NotePreview from './components/NotePreview'
 import ConfirmModal from './components/ConfirmModal'
-import { useLocalStorage } from './hooks/useLocalStorage'
+import AuthForm from './components/AuthForm'
+import UserProfile from './components/UserProfile'
+import { useAuth } from './contexts/AuthContext'
+import { useUserData } from './hooks/useUserData'
 
 function App() {
-  const [folders, setFolders] = useLocalStorage('listalico-folders', [
-    {
-      id: 1,
-      name: 'Personal',
-      color: '#666666',
-      notes: []
-    }
-  ])
-  
-  const [notes, setNotes] = useLocalStorage('listalico-notes', [])
-  const [deletedFolders, setDeletedFolders] = useLocalStorage('listalico-deleted-folders', [])
-  const [deletedNotes, setDeletedNotes] = useLocalStorage('listalico-deleted-notes', [])
+  const { user, signOut, loading: authLoading } = useAuth()
+  const {
+    folders,
+    notes,
+    deletedFolders,
+    deletedNotes,
+    setFolders,
+    setNotes,
+    setDeletedFolders,
+    setDeletedNotes,
+    createFolder,
+    updateFolder,
+    deleteFolder,
+    createNote,
+    updateNote,
+    deleteNote,
+    syncData,
+    syncStatus,
+    lastSync,
+    syncError,
+    isOnline,
+    isAuthenticated,
+    isLoading: dataLoading
+  } = useUserData()
   const [selectedFolder, setSelectedFolder] = useState(folders[0]?.id || null)
   const [selectedNote, setSelectedNote] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -28,6 +43,8 @@ function App() {
   const [showPreview, setShowPreview] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState(new Set())
   const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [showUserProfile, setShowUserProfile] = useState(false)
+  const [showAuthForm, setShowAuthForm] = useState(false)
   
   // Estados para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({
@@ -47,7 +64,7 @@ function App() {
     return matchesFolder && matchesSearch
   })
 
-  const createNewNote = () => {
+  const createNewNote = async () => {
     // Si no hay carpeta seleccionada, crear en la primera carpeta disponible
     const targetFolderId = selectedFolder || folders[0]?.id || null
     
@@ -63,20 +80,30 @@ function App() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }
-    setNotes(prev => [newNote, ...prev])
-    setSelectedNote(newNote.id)
-    setShowPreview(true)
-    setShowNoteEditor(false)
+    
+    try {
+      await createNote(newNote)
+      setSelectedNote(newNote.id)
+      setShowPreview(true)
+      setShowNoteEditor(false)
+    } catch (error) {
+      console.error('Error creating note:', error)
+    }
   }
 
-  const createNewFolder = () => {
+  const createNewFolder = async () => {
     const newFolder = {
       id: Date.now(),
       name: 'Nueva Carpeta',
       color: '#666666',
       notes: []
     }
-    setFolders(prev => [...prev, newFolder])
+    
+    try {
+      await createFolder(newFolder)
+    } catch (error) {
+      console.error('Error creating folder:', error)
+    }
   }
 
   const moveToTrash = (folder) => {
@@ -314,6 +341,43 @@ function App() {
     setConfirmModal({ ...confirmModal, isOpen: false })
   }
 
+  const handleAuthSuccess = () => {
+    setShowAuthForm(false)
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      setShowUserProfile(false)
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
+
+  // Show loading screen while authenticating
+  if (authLoading || dataLoading) {
+    return (
+      <div className="app-loading">
+        <div className="loading-content">
+          <div className="loading-spinner">
+            <RefreshCw size={32} className="spinning" />
+          </div>
+          <h2>Cargando Listalico...</h2>
+          <p>Preparando tu espacio de notas</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show authentication form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="app">
+        <AuthForm onSuccess={handleAuthSuccess} />
+      </div>
+    )
+  }
+
   return (
     <div className="app">
       <div className="app-header">
@@ -384,6 +448,36 @@ function App() {
           <div className="stats-badge">
             <span className="notes-count">{notes.length}</span>
           </div>
+
+          {/* Sync status */}
+          <div className="sync-status">
+            {!isOnline ? (
+              <div className="offline-indicator" title="Sin conexión">
+                <WifiOff size={16} />
+              </div>
+            ) : syncStatus === 'syncing' ? (
+              <div className="syncing-indicator" title="Sincronizando...">
+                <RefreshCw size={16} className="spinning" />
+              </div>
+            ) : syncStatus === 'error' ? (
+              <div className="sync-error-indicator" title={`Error de sincronización: ${syncError}`}>
+                <RefreshCw size={16} />
+              </div>
+            ) : lastSync ? (
+              <div className="sync-success-indicator" title={`Última sincronización: ${lastSync.toLocaleTimeString()}`}>
+                <Wifi size={16} />
+              </div>
+            ) : null}
+          </div>
+
+          {/* User profile button */}
+          <button 
+            className="user-profile-btn"
+            onClick={() => setShowUserProfile(true)}
+            title={`Perfil de ${user?.user_metadata?.full_name || user?.email}`}
+          >
+            <User size={20} />
+          </button>
           
           {/* Mobile menu button */}
           <button 
@@ -554,6 +648,11 @@ function App() {
         confirmText={confirmModal.confirmText}
         cancelText="Cancelar"
       />
+
+      {/* User Profile Modal */}
+      {showUserProfile && (
+        <UserProfile onClose={() => setShowUserProfile(false)} />
+      )}
 
       {/* Footer */}
       <footer className="app-footer">
