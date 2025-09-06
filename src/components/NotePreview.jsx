@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Save, Edit, FileText, Tag, Clock, Folder, AlertCircle, Star, Hash, Trash2 } from 'lucide-react'
 
-const NotePreview = ({ note, notes, setNotes, folders, setFolders, onEdit, onClose, onDelete = () => {} }) => {
+const NotePreview = ({ note, notes, setNotes, folders, setFolders, onEdit, onClose, onDelete = () => {}, updateNote }) => {
   const [title, setTitle] = useState(note?.title || '')
   const [content, setContent] = useState(note?.content || '')
   const [isEditing, setIsEditing] = useState(true)
@@ -34,29 +34,39 @@ const NotePreview = ({ note, notes, setNotes, folders, setFolders, onEdit, onClo
     return date.toLocaleDateString('es-ES', options)
   }
 
-  const saveNote = () => {
+  const saveNote = async () => {
     if (!title.trim()) {
       alert('El título es obligatorio')
       return
     }
 
-    const updatedNote = {
-      ...note,
+    const updates = {
       title: title.trim(),
       content: content.trim(),
       updatedAt: new Date().toISOString()
     }
 
-    setNotes(prev => prev.map(n => n.id === note.id ? updatedNote : n))
+    // Usar updateNote que sincroniza con Supabase
+    if (updateNote) {
+      await updateNote(note.id, updates)
+    } else {
+      // Fallback al método anterior si no se pasa updateNote
+      const updatedNote = {
+        ...note,
+        ...updates
+      }
+      setNotes(prev => prev.map(n => n.id === note.id ? updatedNote : n))
+    }
   }
 
+  // Guardado automático con debounce
   useEffect(() => {
     if (note && (title !== note.title || content !== note.content)) {
       const timeoutId = setTimeout(() => {
         if (title.trim()) {
           saveNote()
         }
-      }, 1000)
+      }, 2000) // Aumentar el tiempo para evitar guardados excesivos
 
       return () => clearTimeout(timeoutId)
     }

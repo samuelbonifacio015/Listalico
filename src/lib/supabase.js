@@ -36,6 +36,55 @@ if (!supabaseUrl || !supabaseAnonKey) {
   supabase = mockClient
 } else {
   supabase = createClient(supabaseUrl, supabaseAnonKey)
+  
+  // Función para probar la conexión y verificar las tablas
+  window.testSupabaseConnection = async () => {
+    console.log('=== TESTING SUPABASE CONNECTION ===')
+    
+    try {
+      // Probar conexión básica
+      console.log('1. Testing basic connection...')
+      const { data: session, error: sessionError } = await supabase.auth.getSession()
+      console.log('Session:', session, 'Error:', sessionError)
+      
+      // Probar acceso a la tabla folders
+      console.log('2. Testing folders table...')
+      const { data: folders, error: foldersError } = await supabase
+        .from('folders')
+        .select('*')
+        .limit(5)
+      console.log('Folders:', folders, 'Error:', foldersError)
+      
+      // Probar acceso a la tabla notes
+      console.log('3. Testing notes table...')
+      const { data: notes, error: notesError } = await supabase
+        .from('notes')
+        .select('*')
+        .limit(5)
+      console.log('Notes:', notes, 'Error:', notesError)
+      
+      // Probar inserción de prueba (solo si no hay datos)
+      if (folders && folders.length === 0) {
+        console.log('4. Testing folder creation...')
+        const { data: newFolder, error: createError } = await supabase
+          .from('folders')
+          .insert({
+            name: 'Test Folder',
+            color: '#666666',
+            user_id: '00000000-0000-0000-0000-000000000000' // ID temporal para prueba
+          })
+          .select()
+          .single()
+        console.log('New folder:', newFolder, 'Error:', createError)
+      }
+      
+      console.log('=== CONNECTION TEST COMPLETED ===')
+      return { success: true, folders, notes }
+    } catch (error) {
+      console.error('Connection test failed:', error)
+      return { success: false, error }
+    }
+  }
 }
 
 export { supabase }

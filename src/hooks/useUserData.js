@@ -10,15 +10,8 @@ export const useUserData = () => {
   const [lastSync, setLastSync] = useState(null)
   const [syncError, setSyncError] = useState(null)
 
-  // Local storage fallback
-  const [localFolders, setLocalFolders] = useLocalStorage('listalico-folders', [
-    {
-      id: 1,
-      name: 'Personal',
-      color: '#666666',
-      notes: []
-    }
-  ])
+  // Local storage fallback - Inicializar vacío para evitar datos residuales
+  const [localFolders, setLocalFolders] = useLocalStorage('listalico-folders', [])
   const [localNotes, setLocalNotes] = useLocalStorage('listalico-notes', [])
   const [localDeletedFolders, setLocalDeletedFolders] = useLocalStorage('listalico-deleted-folders', [])
   const [localDeletedNotes, setLocalDeletedNotes] = useLocalStorage('listalico-deleted-notes', [])
@@ -42,6 +35,10 @@ export const useUserData = () => {
     if (user) {
       userDataService.setUserId(user.id)
       console.log('User authenticated:', user.id)
+      
+      // Limpiar datos locales cuando se autentica un usuario nuevo
+      // Esto evita que se muestren datos de sesiones anteriores
+      clearLocalData()
     }
   }, [user])
 
@@ -68,6 +65,26 @@ export const useUserData = () => {
       }
     }
   }, [isOnline, user, authLoading])
+
+  // Función para limpiar datos locales
+  const clearLocalData = () => {
+    console.log('Clearing local data for new user session')
+    setLocalFolders([])
+    setLocalNotes([])
+    setLocalDeletedFolders([])
+    setLocalDeletedNotes([])
+  }
+
+  // Función para resetear completamente los datos
+  const resetAllData = () => {
+    console.log('Resetting all data')
+    clearLocalData()
+    // Limpiar también el localStorage
+    localStorage.removeItem('listalico-folders')
+    localStorage.removeItem('listalico-notes')
+    localStorage.removeItem('listalico-deleted-folders')
+    localStorage.removeItem('listalico-deleted-notes')
+  }
 
   const loadUserData = async () => {
     if (!user || !isOnline) return
@@ -350,6 +367,10 @@ export const useUserData = () => {
     
     // Auth state
     isAuthenticated: !!user,
-    isLoading: authLoading
+    isLoading: authLoading,
+    
+    // Utility functions
+    clearLocalData,
+    resetAllData
   }
 }

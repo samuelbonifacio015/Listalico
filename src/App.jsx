@@ -621,6 +621,7 @@ function App() {
                 setSelectedNote(null)
               }}
               onDelete={() => confirmDeleteNote(selectedNote)}
+              updateNote={updateNote}
             />
           )}
           
@@ -636,6 +637,7 @@ function App() {
                 setShowPreview(true)
               }}
               onDelete={() => confirmDeleteNote(selectedNote)}
+              updateNote={updateNote}
             />
           )}
         </div>

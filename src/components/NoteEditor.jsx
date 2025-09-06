@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { X, Save, CheckSquare, Square, Tag, AlertCircle, Clock, Star, Folder, Plus, Download, Upload, FileText, Hash, Trash2, Calendar, Bell, Target, Zap } from 'lucide-react'
 
-const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose, onDelete = () => {} }) => {
+const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose, onDelete = () => {}, updateNote }) => {
   const [title, setTitle] = useState(note?.title || '')
   const [content, setContent] = useState(note?.content || '')
   const [isTask, setIsTask] = useState(note?.isTask || false)
@@ -64,14 +64,13 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose, onDel
     return date.toLocaleDateString('es-ES', options)
   }
 
-  const saveNote = () => {
+  const saveNote = async () => {
     if (!title.trim()) {
       alert('El título es obligatorio')
       return
     }
 
-    const updatedNote = {
-      ...note,
+    const updates = {
       title: title.trim(),
       content: content.trim(),
       isTask,
@@ -87,7 +86,18 @@ const NoteEditor = ({ note, notes, setNotes, folders, setFolders, onClose, onDel
       updatedAt: new Date().toISOString()
     }
 
-    setNotes(prev => prev.map(n => n.id === note.id ? updatedNote : n))
+    // Usar updateNote que sincroniza con Supabase
+    if (updateNote) {
+      await updateNote(note.id, updates)
+    } else {
+      // Fallback al método anterior
+      const updatedNote = {
+        ...note,
+        ...updates
+      }
+      setNotes(prev => prev.map(n => n.id === note.id ? updatedNote : n))
+    }
+    
     onClose()
   }
 
