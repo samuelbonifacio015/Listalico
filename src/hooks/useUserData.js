@@ -55,6 +55,20 @@ export const useUserData = () => {
     }
   }, [user, authLoading, isOnline])
 
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (isOnline && user && !authLoading) {
+      // Verificar si hay elementos con IDs temporales que necesitan sincronización
+      const hasTempFolders = localFolders.some(f => f.id.toString().startsWith('temp_'))
+      const hasTempNotes = localNotes.some(n => n.id.toString().startsWith('temp_'))
+      
+      if (hasTempFolders || hasTempNotes) {
+        console.log('Found temporary items, syncing...')
+        syncData()
+      }
+    }
+  }, [isOnline, user, authLoading])
+
   const loadUserData = async () => {
     if (!user || !isOnline) return
 
@@ -78,14 +92,14 @@ export const useUserData = () => {
       const convertedFolders = userDataService.convertServerFolders(serverFolders)
       const convertedNotes = userDataService.convertServerNotes(serverNotes)
 
-      // Solo actualizar si hay datos del servidor, de lo contrario mantener datos locales
-      if (convertedFolders.length > 0 || convertedNotes.length > 0) {
-        setLocalFolders(convertedFolders)
-        setLocalNotes(convertedNotes)
-        console.log('Server data applied to local state')
-      } else {
-        console.log('No server data found, keeping local data')
-      }
+      // Siempre actualizar con los datos del servidor si están disponibles
+      // Esto asegura que los datos se sincronicen correctamente
+      setLocalFolders(convertedFolders)
+      setLocalNotes(convertedNotes)
+      console.log('Server data applied to local state:', {
+        folders: convertedFolders.length,
+        notes: convertedNotes.length
+      })
       
       setLastSync(new Date())
       setSyncStatus('success')
@@ -104,11 +118,24 @@ export const useUserData = () => {
       setSyncStatus('syncing')
       setSyncError(null)
 
-      const syncResults = await userDataService.syncUserData(localFolders, localNotes)
+      console.log('Starting sync process...')
+      
+      // Filtrar elementos con IDs temporales para sincronizar
+      const foldersToSync = localFolders.filter(f => !f.id.toString().startsWith('temp_'))
+      const notesToSync = localNotes.filter(n => !n.id.toString().startsWith('temp_'))
+      
+      console.log('Syncing data:', {
+        folders: foldersToSync.length,
+        notes: notesToSync.length
+      })
+
+      const syncResults = await userDataService.syncUserData(foldersToSync, notesToSync)
       
       if (syncResults.errors.length > 0) {
         console.warn('Sync completed with errors:', syncResults.errors)
       }
+
+      console.log('Sync results:', syncResults)
 
       // Reload data after sync
       await loadUserData()
@@ -122,20 +149,31 @@ export const useUserData = () => {
   }
 
   const createFolder = async (folder) => {
+    // Generar un ID temporal único para la carpeta local
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const folderWithTempId = { ...folder, id: tempId }
+    
     // Siempre agregar a local primero para feedback inmediato
-    setLocalFolders(prev => [...prev, folder])
+    setLocalFolders(prev => [...prev, folderWithTempId])
     
     if (isOnline && user) {
       try {
-        const serverFolder = await userDataService.createFolder(folder)
+        console.log('Syncing folder to server:', folderWithTempId)
+        const serverFolder = await userDataService.createFolder(folderWithTempId)
         const convertedFolder = userDataService.convertServerFolders([serverFolder])[0]
+        
         // Actualizar con el ID del servidor
         setLocalFolders(prev => 
-          prev.map(f => f.id === folder.id ? convertedFolder : f)
+          prev.map(f => f.id === tempId ? convertedFolder : f)
         )
-        console.log('Folder created on server:', convertedFolder.id)
+        console.log('Folder synced to server successfully:', convertedFolder.id)
+        
+        // Forzar sincronización después de crear
+        setTimeout(() => {
+          syncData()
+        }, 1000)
       } catch (error) {
-        console.error('Error creating folder on server:', error)
+        console.error('Error syncing folder to server:', error)
         // Mantener la carpeta local aunque falle en el servidor
       }
     }
@@ -183,22 +221,60 @@ export const useUserData = () => {
   }
 
   const createNote = async (note) => {
+    console.log('=== CREATE NOTE CALLED ===')
+    console.log('Note data:', note)
+    console.log('Is online:', isOnline)
+    console.log('User:', user ? 'authenticated' : 'not authenticated')
+    
+    // Generar un ID único para la nota local
+    const noteId = Date.now() + Math.random().toString(36).substr(2, 9)
+    const noteWithId = { 
+      ...note, 
+      id: noteId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    console.log('Note with ID:', noteWithId)
+    
     // Siempre agregar a local primero para feedback inmediato
-    setLocalNotes(prev => [note, ...prev])
+    setLocalNotes(prev => {
+      const newNotes = [noteWithId, ...prev]
+      console.log('Updated local notes:', newNotes)
+      return newNotes
+    })
+    console.log('Note created locally:', noteWithId)
     
     if (isOnline && user) {
       try {
-        const serverNote = await userDataService.createNote(note)
+        console.log('Attempting to sync note to server...')
+        const serverNote = await userDataService.createNote(noteWithId)
+        console.log('Server response:', serverNote)
         const convertedNote = userDataService.convertServerNotes([serverNote])[0]
+        console.log('Converted note:', convertedNote)
+        
         // Actualizar con el ID del servidor
         setLocalNotes(prev => 
-          prev.map(n => n.id === note.id ? convertedNote : n)
+          prev.map(n => n.id === noteId ? convertedNote : n)
         )
-        console.log('Note created on server:', convertedNote.id)
+        console.log('Note synced to server successfully:', convertedNote.id)
+        
+        // Forzar sincronización después de crear
+        setTimeout(() => {
+          console.log('Running delayed sync...')
+          syncData()
+        }, 1000)
+        
+        return convertedNote
       } catch (error) {
-        console.error('Error creating note on server:', error)
+        console.error('Error syncing note to server:', error)
+        console.log('Note will remain local only')
         // Mantener la nota local aunque falle en el servidor
+        return noteWithId
       }
+    } else {
+      console.log('Note saved locally (offline or not authenticated)')
+      return noteWithId
     }
   }
 
@@ -216,6 +292,11 @@ export const useUserData = () => {
       try {
         await userDataService.updateNote(noteId, updates)
         console.log('Note updated on server:', noteId)
+        
+        // Forzar sincronización después de actualizar
+        setTimeout(() => {
+          syncData()
+        }, 1000)
       } catch (error) {
         console.error('Error updating note on server:', error)
         // Los datos locales ya están actualizados

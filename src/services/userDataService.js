@@ -26,6 +26,8 @@ class UserDataService {
   async createFolder(folder) {
     if (!this.userId) throw new Error('User not authenticated')
 
+    console.log('Creating folder on server:', folder) // Debug log
+
     const { data, error } = await supabase
       .from('folders')
       .insert({
@@ -38,7 +40,12 @@ class UserDataService {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('Error creating folder:', error) // Debug log
+      throw error
+    }
+    
+    console.log('Folder created successfully:', data) // Debug log
     return data
   }
 
@@ -90,27 +97,42 @@ class UserDataService {
   }
 
   async createNote(note) {
-    if (!this.userId) throw new Error('User not authenticated')
+    if (!this.userId) {
+      console.error('User not authenticated')
+      throw new Error('User not authenticated')
+    }
 
-    const { data, error } = await supabase
-      .from('notes')
-      .insert({
-        user_id: this.userId,
-        title: note.title,
-        content: note.content,
-        folder_id: note.folderId,
-        priority: note.priority || 'medium',
-        categories: note.categories || [],
-        is_task: note.isTask || false,
-        completed: note.completed || false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single()
+    console.log('Creating note on server:', note) // Debug log
 
-    if (error) throw error
-    return data
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({
+          user_id: this.userId,
+          title: note.title,
+          content: note.content,
+          folder_id: note.folderId,
+          priority: note.priority || 'medium',
+          categories: note.categories || [],
+          is_task: note.isTask || false,
+          completed: note.completed || false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating note:', error) // Debug log
+        throw error
+      }
+      
+      console.log('Note created successfully:', data) // Debug log
+      return data
+    } catch (error) {
+      console.error('Failed to create note:', error)
+      throw new Error(`Failed to create note: ${error.message}`)
+    }
   }
 
   async updateNote(noteId, updates) {
@@ -160,11 +182,18 @@ class UserDataService {
     if (!this.userId) throw new Error('User not authenticated')
 
     try {
+      console.log('Starting sync process with server...')
+      
       // Get server data
       const [serverFolders, serverNotes] = await Promise.all([
         this.getFolders(),
         this.getNotes()
       ])
+
+      console.log('Server data retrieved:', {
+        folders: serverFolders.length,
+        notes: serverNotes.length
+      })
 
       // Create maps for easier lookup
       const serverFoldersMap = new Map(serverFolders.map(f => [f.id, f]))
@@ -204,6 +233,13 @@ class UserDataService {
         }
       }
 
+      console.log('Sync operations needed:', {
+        foldersToCreate: foldersToCreate.length,
+        foldersToUpdate: foldersToUpdate.length,
+        notesToCreate: notesToCreate.length,
+        notesToUpdate: notesToUpdate.length
+      })
+
       // Execute sync operations
       const syncResults = {
         foldersCreated: 0,
@@ -216,9 +252,11 @@ class UserDataService {
       // Create folders
       for (const folder of foldersToCreate) {
         try {
+          console.log('Creating folder:', folder.name)
           await this.createFolder(folder)
           syncResults.foldersCreated++
         } catch (error) {
+          console.error('Error creating folder:', error)
           syncResults.errors.push(`Error creating folder ${folder.name}: ${error.message}`)
         }
       }
@@ -226,9 +264,11 @@ class UserDataService {
       // Update folders
       for (const folder of foldersToUpdate) {
         try {
+          console.log('Updating folder:', folder.name)
           await this.updateFolder(folder.id, folder)
           syncResults.foldersUpdated++
         } catch (error) {
+          console.error('Error updating folder:', error)
           syncResults.errors.push(`Error updating folder ${folder.name}: ${error.message}`)
         }
       }
@@ -236,9 +276,11 @@ class UserDataService {
       // Create notes
       for (const note of notesToCreate) {
         try {
+          console.log('Creating note:', note.title)
           await this.createNote(note)
           syncResults.notesCreated++
         } catch (error) {
+          console.error('Error creating note:', error)
           syncResults.errors.push(`Error creating note ${note.title}: ${error.message}`)
         }
       }
@@ -246,15 +288,19 @@ class UserDataService {
       // Update notes
       for (const note of notesToUpdate) {
         try {
+          console.log('Updating note:', note.title)
           await this.updateNote(note.id, note)
           syncResults.notesUpdated++
         } catch (error) {
+          console.error('Error updating note:', error)
           syncResults.errors.push(`Error updating note ${note.title}: ${error.message}`)
         }
       }
 
+      console.log('Sync completed:', syncResults)
       return syncResults
     } catch (error) {
+      console.error('Sync failed:', error)
       throw new Error(`Sync failed: ${error.message}`)
     }
   }

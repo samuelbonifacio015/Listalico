@@ -7,6 +7,7 @@ import NotePreview from './components/NotePreview'
 import ConfirmModal from './components/ConfirmModal'
 import AuthForm from './components/AuthForm'
 import UserProfile from './components/UserProfile'
+import ConfigError from './components/ConfigError'
 import { useAuth } from './contexts/AuthContext'
 import { useUserData } from './hooks/useUserData'
 
@@ -35,6 +36,9 @@ function App() {
     isAuthenticated,
     isLoading: dataLoading
   } = useUserData()
+
+  // Check if Supabase is configured
+  const isSupabaseConfigured = import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
   const [selectedFolder, setSelectedFolder] = useState(folders[0]?.id || null)
   const [selectedNote, setSelectedNote] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -69,21 +73,20 @@ function App() {
     const targetFolderId = selectedFolder || folders[0]?.id || null
     
     const newNote = {
-      id: Date.now(),
       title: 'Nueva Nota',
       content: '',
       folderId: targetFolderId,
       priority: 'medium',
       categories: [],
       isTask: false,
-      completed: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      completed: false
     }
     
     try {
-      await createNote(newNote)
-      setSelectedNote(newNote.id)
+      console.log('Creating new note with data:', newNote)
+      const createdNote = await createNote(newNote)
+      console.log('Note created successfully:', createdNote)
+      setSelectedNote(createdNote.id)
       setShowPreview(true)
       setShowNoteEditor(false)
     } catch (error) {
@@ -380,6 +383,7 @@ function App() {
 
   return (
     <div className="app">
+      {!isSupabaseConfigured && <ConfigError />}
       <div className="app-header">
         <div className="header-left">
           <div className="app-title-container">
