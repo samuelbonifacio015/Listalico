@@ -1,17 +1,14 @@
 import { useState } from 'react'
-import { Plus, Search, FolderPlus, Download, Upload, Trash2, Sparkles, BookOpen, Github, Heart, Menu, X, User, LogOut, Wifi, WifiOff, RefreshCw } from 'lucide-react'
+import { Plus, Search, FolderPlus, Download, Upload, Trash2, Sparkles, BookOpen, Github, Heart, Menu, X } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import NotesList from './components/NotesList'
 import NoteEditor from './components/NoteEditor'
 import NotePreview from './components/NotePreview'
 import ConfirmModal from './components/ConfirmModal'
-import AuthForm from './components/AuthForm'
-import UserProfile from './components/UserProfile'
-import { useAuth } from './contexts/AuthContext'
+import DictationPage from './components/DictationPage'
 import { useUserData } from './hooks/useUserData'
 
 function App() {
-  const { user, signOut, loading: authLoading } = useAuth()
   const {
     folders,
     notes,
@@ -26,14 +23,7 @@ function App() {
     deleteFolder,
     createNote,
     updateNote,
-    deleteNote,
-    syncData,
-    syncStatus,
-    lastSync,
-    syncError,
-    isOnline,
-    isAuthenticated,
-    isLoading: dataLoading
+    deleteNote
   } = useUserData()
   const [selectedFolder, setSelectedFolder] = useState(folders[0]?.id || null)
   const [selectedNote, setSelectedNote] = useState(null)
@@ -41,11 +31,11 @@ function App() {
   const [showNoteEditor, setShowNoteEditor] = useState(false)
   const [showTrash, setShowTrash] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showDictationPage, setShowDictationPage] = useState(false)
   const [expandedFolders, setExpandedFolders] = useState(new Set())
   const [showMobileMenu, setShowMobileMenu] = useState(false)
-  const [showUserProfile, setShowUserProfile] = useState(false)
-  const [showAuthForm, setShowAuthForm] = useState(false)
   
+
   // Estados para el modal de confirmación
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
@@ -341,43 +331,6 @@ function App() {
     setConfirmModal({ ...confirmModal, isOpen: false })
   }
 
-  const handleAuthSuccess = () => {
-    setShowAuthForm(false)
-  }
-
-  const handleSignOut = async () => {
-    try {
-      await signOut()
-      setShowUserProfile(false)
-    } catch (error) {
-      console.error('Error signing out:', error)
-    }
-  }
-
-  // Show loading screen while authenticating
-  if (authLoading || dataLoading) {
-    return (
-      <div className="app-loading">
-        <div className="loading-content">
-          <div className="loading-spinner">
-            <RefreshCw size={32} className="spinning" />
-          </div>
-          <h2>Cargando Listalico...</h2>
-          <p>Preparando tu espacio de notas</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show authentication form if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="app">
-        <AuthForm onSuccess={handleAuthSuccess} />
-      </div>
-    )
-  }
-
   return (
     <div className="app">
       <div className="app-header">
@@ -449,36 +402,7 @@ function App() {
             <span className="notes-count">{notes.length}</span>
           </div>
 
-          {/* Sync status */}
-          <div className="sync-status">
-            {!isOnline ? (
-              <div className="offline-indicator" title="Sin conexión">
-                <WifiOff size={16} />
-              </div>
-            ) : syncStatus === 'syncing' ? (
-              <div className="syncing-indicator" title="Sincronizando...">
-                <RefreshCw size={16} className="spinning" />
-              </div>
-            ) : syncStatus === 'error' ? (
-              <div className="sync-error-indicator" title={`Error de sincronización: ${syncError}`}>
-                <RefreshCw size={16} />
-              </div>
-            ) : lastSync ? (
-              <div className="sync-success-indicator" title={`Última sincronización: ${lastSync.toLocaleTimeString()}`}>
-                <Wifi size={16} />
-              </div>
-            ) : null}
-          </div>
 
-          {/* User profile button */}
-          <button 
-            className="user-profile-btn"
-            onClick={() => setShowUserProfile(true)}
-            title={`Perfil de ${user?.user_metadata?.full_name || user?.email}`}
-          >
-            <User size={20} />
-          </button>
-          
           {/* Mobile menu button */}
           <button 
             className="mobile-menu-btn"
@@ -581,6 +505,11 @@ function App() {
           permanentlyDeleteNote={permanentlyDeleteNote}
           createNewFolder={createNewFolder}
           createNewNote={createNewNote}
+          openDictation={() => {
+            setShowDictationPage(true)
+            setShowNoteEditor(false)
+            setShowPreview(false)
+          }}
           moveNoteToFolder={moveNoteToFolder}
           expandedFolders={expandedFolders}
           toggleFolderExpansion={toggleFolderExpansion}
@@ -589,50 +518,79 @@ function App() {
         />
         
         <div className="main-content">
-          <NotesList
-            notes={filteredNotes}
-            selectedNote={selectedNote}
-            setSelectedNote={handleNoteSelect}
-            setShowNoteEditor={setShowNoteEditor}
-            onNoteDoubleClick={handleNoteDoubleClick}
-            setNotes={setNotes}
-            folders={folders}
-            showPreview={showPreview}
-            onDeleteNote={confirmDeleteNote}
-          />
-          
-          {showPreview && selectedNote && (
-            <NotePreview
-              note={notes.find(n => n.id === selectedNote)}
-              notes={notes}
-              setNotes={setNotes}
+          {showDictationPage ? (
+            <DictationPage
               folders={folders}
-              setFolders={setFolders}
-              onEdit={() => {
-                setShowNoteEditor(true)
-                setShowPreview(false)
+              selectedFolder={selectedFolder}
+              onSave={async (dictatedNote) => {
+                const targetFolderId = dictatedNote.folderId || selectedFolder || folders[0]?.id || null;
+                const newNote = {
+                  ...dictatedNote,
+                  id: Date.now(),
+                  folderId: targetFolderId,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                };
+                try {
+                  await createNote(newNote);
+                  setSelectedNote(newNote.id);
+                  setShowPreview(true);
+                  setShowNoteEditor(false);
+                  setShowDictationPage(false);
+                } catch (error) {
+                  console.error('Error creating dictation note:', error);
+                }
               }}
-              onClose={() => {
-                setShowPreview(false)
-                setSelectedNote(null)
-              }}
-              onDelete={() => confirmDeleteNote(selectedNote)}
+              onClose={() => setShowDictationPage(false)}
             />
-          )}
-          
-          {showNoteEditor && selectedNote && (
-            <NoteEditor
-              note={notes.find(n => n.id === selectedNote)}
-              notes={notes}
-              setNotes={setNotes}
-              folders={folders}
-              setFolders={setFolders}
-              onClose={() => {
-                setShowNoteEditor(false)
-                setShowPreview(true)
-              }}
-              onDelete={() => confirmDeleteNote(selectedNote)}
-            />
+          ) : (
+            <>
+              <NotesList
+                notes={filteredNotes}
+                selectedNote={selectedNote}
+                setSelectedNote={handleNoteSelect}
+                setShowNoteEditor={setShowNoteEditor}
+                onNoteDoubleClick={handleNoteDoubleClick}
+                setNotes={setNotes}
+                folders={folders}
+                showPreview={showPreview}
+                onDeleteNote={confirmDeleteNote}
+              />
+              
+              {showPreview && selectedNote && (
+                <NotePreview
+                  note={notes.find(n => n.id === selectedNote)}
+                  notes={notes}
+                  setNotes={setNotes}
+                  folders={folders}
+                  setFolders={setFolders}
+                  onEdit={() => {
+                    setShowNoteEditor(true)
+                    setShowPreview(false)
+                  }}
+                  onClose={() => {
+                    setShowPreview(false)
+                    setSelectedNote(null)
+                  }}
+                  onDelete={() => confirmDeleteNote(selectedNote)}
+                />
+              )}
+              
+              {showNoteEditor && selectedNote && (
+                <NoteEditor
+                  note={notes.find(n => n.id === selectedNote)}
+                  notes={notes}
+                  setNotes={setNotes}
+                  folders={folders}
+                  setFolders={setFolders}
+                  onClose={() => {
+                    setShowNoteEditor(false)
+                    setShowPreview(true)
+                  }}
+                  onDelete={() => confirmDeleteNote(selectedNote)}
+                />
+              )}
+            </>
           )}
         </div>
       </div>
@@ -648,11 +606,6 @@ function App() {
         confirmText={confirmModal.confirmText}
         cancelText="Cancelar"
       />
-
-      {/* User Profile Modal */}
-      {showUserProfile && (
-        <UserProfile onClose={() => setShowUserProfile(false)} />
-      )}
 
       {/* Footer */}
       <footer className="app-footer">

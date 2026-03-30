@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Folder, Edit3, Trash2, Palette, RotateCcw, X, FolderPlus, ChevronDown, ChevronRight, FileText, Plus } from 'lucide-react'
+import { Folder, Edit3, Trash2, Palette, RotateCcw, X, FolderPlus, ChevronDown, ChevronRight, FileText, Plus, Mic } from 'lucide-react'
 
 const Sidebar = ({ 
   folders = [], 
@@ -18,6 +18,7 @@ const Sidebar = ({
   permanentlyDeleteNote = () => {},
   createNewFolder = () => {},
   createNewNote = () => {},
+  openDictation = () => {},
   expandedFolders = new Set(),
   toggleFolderExpansion = () => {},
   onNoteSelect = () => {},
@@ -561,8 +562,8 @@ const Sidebar = ({
           )
         })}
 
-        {/* Botón Nueva Nota */}
-        <div className="new-note-section">
+        {/* Botones de creación */}
+        <div className="new-note-section" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button 
             onClick={createNewNote} 
             className="btn-new-note" 
@@ -570,6 +571,20 @@ const Sidebar = ({
           >
             <Plus size={16} />
             Nueva Nota
+          </button>
+          
+          <button 
+            onClick={openDictation} 
+            className="btn-new-note dictation-btn" 
+            title="Nueva nota por voz"
+            style={{ 
+              backgroundColor: 'rgba(255, 69, 58, 0.1)', 
+              color: '#ff453a',
+              border: '1px solid rgba(255, 69, 58, 0.2)'
+            }}
+          >
+            <Mic size={16} />
+            Dictar Nota
           </button>
         </div>
       </div>
