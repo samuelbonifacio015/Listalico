@@ -5,6 +5,7 @@ const useDictation = (onFinalResult) => {
   const [interimText, setInterimText] = useState('');
   const [isSupported, setIsSupported] = useState(true);
   const [error, setError] = useState(null);
+  const [diagnostics, setDiagnostics] = useState(null);
   const recognitionRef = useRef(null);
   const isIntentionallyStopped = useRef(true);
 
@@ -24,6 +25,38 @@ const useDictation = (onFinalResult) => {
       return;
     }
 
+    const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV !== 'production';
+    const setDiag = (patch) => {
+      if (!isDev) return;
+      setDiagnostics((prev) => ({
+        ...(prev || {}),
+        ...patch,
+        updatedAt: Date.now(),
+      }));
+    };
+
+    setDiag({
+      isDev,
+      userAgent: navigator.userAgent,
+      isSecureContext: window.isSecureContext,
+      origin: window.location?.origin,
+      speechRecognitionImpl: window.SpeechRecognition ? 'SpeechRecognition' : 'webkitSpeechRecognition',
+    });
+
+    if (navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: 'microphone' })
+        .then((status) => {
+          setDiag({ microphonePermission: status.state });
+          status.onchange = () => setDiag({ microphonePermission: status.state });
+        })
+        .catch(() => {
+          setDiag({ microphonePermission: 'unknown' });
+        });
+    } else {
+      setDiag({ microphonePermission: 'unsupported' });
+    }
+
     try {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = true;
@@ -36,9 +69,39 @@ const useDictation = (onFinalResult) => {
 
     const recognition = recognitionRef.current;
 
+    recognition.onstart = () => {
+      setDiag({ lastEvent: 'onstart' });
+    };
+
+    recognition.onaudiostart = () => {
+      setDiag({ lastEvent: 'onaudiostart' });
+    };
+
+    recognition.onsoundstart = () => {
+      setDiag({ lastEvent: 'onsoundstart' });
+    };
+
+    recognition.onspeechstart = () => {
+      setDiag({ lastEvent: 'onspeechstart' });
+    };
+
+    recognition.onspeechend = () => {
+      setDiag({ lastEvent: 'onspeechend' });
+    };
+
+    recognition.onnomatch = () => {
+      setDiag({ lastEvent: 'onnomatch' });
+    };
+
     recognition.onresult = (event) => {
       let interim = '';
       let final = '';
+
+      setDiag({
+        lastEvent: 'onresult',
+        lastResultIndex: event.resultIndex,
+        lastResultsLength: event.results?.length,
+      });
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
@@ -56,6 +119,7 @@ const useDictation = (onFinalResult) => {
     };
 
     recognition.onend = () => {
+      setDiag({ lastEvent: 'onend' });
       // Auto-restart if it was stopped by the system but we still want to listen
       if (!isIntentionallyStopped.current) {
         try {
@@ -73,6 +137,11 @@ const useDictation = (onFinalResult) => {
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error', event.error);
+      setDiag({
+        lastEvent: 'onerror',
+        lastError: event.error,
+        lastErrorTime: Date.now(),
+      });
       
       let errorMessage = 'Error en el reconocimiento de voz.';
       if (event.error === 'network') {
@@ -99,6 +168,12 @@ const useDictation = (onFinalResult) => {
         recognition.onend = null;
         recognition.onerror = null;
         recognition.onresult = null;
+        recognition.onstart = null;
+        recognition.onaudiostart = null;
+        recognition.onsoundstart = null;
+        recognition.onspeechstart = null;
+        recognition.onspeechend = null;
+        recognition.onnomatch = null;
         recognition.stop();
       }
     };
@@ -138,7 +213,7 @@ const useDictation = (onFinalResult) => {
     }
   }, [isListening, startListening, stopListening]);
 
-  return { isListening, interimText, isSupported, error, toggleListening, stopListening };
+  return { isListening, interimText, isSupported, error, diagnostics, toggleListening, stopListening };
 };
 
 export default useDictation;

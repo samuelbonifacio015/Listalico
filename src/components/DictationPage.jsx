@@ -4,12 +4,12 @@ import useDictation from '../hooks/useDictation'
 
 const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
   const [title, setTitle] = useState('Nota Dictada')
-  const [content, setContent] = useState('')
+  const [finalText, setFinalText] = useState('')
   const [folderId, setFolderId] = useState(selectedFolder || (folders[0]?.id || null))
   const textareaRef = useRef(null)
 
   const handleDictationResult = useCallback((text) => {
-    setContent(prev => {
+    setFinalText(prev => {
       const spacing = (prev === '' || prev.endsWith(' ') || prev.endsWith('\n')) ? '' : ' ';
       return prev + spacing + text;
     });
@@ -20,9 +20,13 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
     interimText, 
     isSupported, 
     error,
+    diagnostics,
     toggleListening, 
     stopListening 
   } = useDictation(handleDictationResult);
+
+  const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV !== 'production';
+  const isNetworkError = typeof error === 'string' && error.toLowerCase().includes('error de red');
 
   const handleToggleDictation = () => {
     toggleListening();
@@ -37,9 +41,7 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
     }
   };
 
-  const displayContent = isListening && interimText 
-    ? content + (content && !content.endsWith(' ') && !content.endsWith('\n') ? ' ' : '') + interimText
-    : content;
+  const showGhostInterim = Boolean(isListening && interimText);
 
   const handleSave = () => {
     if (isListening) {
@@ -47,7 +49,7 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
     }
     onSave({
       title: title.trim() || 'Nota sin título',
-      content: content.trim(),
+      content: finalText.trim(),
       folderId,
       isTask: false,
       priority: 'medium',
@@ -67,7 +69,7 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [title, content, folderId, onSave, onClose]);
+  }, [title, finalText, folderId, onSave, onClose]);
 
   if (!isSupported) {
     return (
@@ -120,9 +122,9 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
                {isListening ? 'Grabando activo... puedes hablar' : 'Micrófono apagado'}
              </span>
              {error && (
-               <span style={{ color: '#ff453a', fontSize: '0.85rem', fontWeight: '500', marginTop: '4px', maxWidth: '500px', lineHeight: '1.4' }}>
-                 ⚠️ {error}
-               </span>
+              <span style={{ color: '#ff453a', fontSize: '0.85rem', fontWeight: '500', marginTop: '4px', maxWidth: '520px', lineHeight: '1.4' }}>
+                {error}
+              </span>
              )}
            </div>
         </div>
@@ -156,13 +158,75 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
          </div>
       </div>
 
+      {isNetworkError && (
+        <div style={{
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '14px 16px',
+          marginBottom: '16px',
+          color: 'var(--text-primary)',
+          lineHeight: 1.45
+        }}>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Cómo solucionarlo (dev)</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+            En Brave/Chromium en Linux, el dictado nativo (Web Speech API) suele fallar con <code>network</code>.
+            Prueba con <strong>Google Chrome oficial</strong> para confirmar, o usa el modo fallback (grabación + transcripción por servidor).
+          </div>
+        </div>
+      )}
+
+      {isDev && diagnostics && (
+        <details style={{
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '12px 14px',
+          marginBottom: '16px',
+          color: 'var(--text-primary)'
+        }}>
+          <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Diagnóstico (dev)</summary>
+          <pre style={{
+            marginTop: 10,
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            fontSize: '0.85rem',
+            color: 'var(--text-secondary)'
+          }}>
+            {JSON.stringify(diagnostics, null, 2)}
+          </pre>
+        </details>
+      )}
+
       <div className="dictation-body" style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+        {showGhostInterim && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: 30,
+              right: 30,
+              bottom: 18,
+              pointerEvents: 'none',
+              color: 'var(--text-secondary)',
+              opacity: 0.8,
+              fontSize: '1.05rem',
+              lineHeight: '1.4',
+              fontStyle: 'italic',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              zIndex: 2,
+              textShadow: '0 1px 0 rgba(0,0,0,0.2)'
+            }}
+          >
+            {interimText}
+          </div>
+        )}
         <textarea
           ref={textareaRef}
-          value={displayContent}
+          value={finalText}
           onChange={(e) => {
-            if (isListening) stopListening();
-            setContent(e.target.value);
+            setFinalText(e.target.value);
           }}
           placeholder="Presiona el micrófono y comienza a hablar. El texto aparecerá aquí mágicamente..."
           style={{
