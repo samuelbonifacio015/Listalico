@@ -15,7 +15,14 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
     });
   }, []);
 
-  const { isListening, interimText, isSupported, toggleListening, stopListening } = useDictation(handleDictationResult);
+  const { 
+    isListening, 
+    interimText, 
+    isSupported, 
+    error,
+    toggleListening, 
+    stopListening 
+  } = useDictation(handleDictationResult);
 
   const handleToggleDictation = () => {
     toggleListening();
@@ -112,6 +119,11 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
              <span style={{ color: isListening ? '#ff453a' : 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>
                {isListening ? 'Grabando activo... puedes hablar' : 'Micrófono apagado'}
              </span>
+             {error && (
+               <span style={{ color: '#ff453a', fontSize: '0.85rem', fontWeight: '500', marginTop: '4px', maxWidth: '500px', lineHeight: '1.4' }}>
+                 ⚠️ {error}
+               </span>
+             )}
            </div>
         </div>
         
