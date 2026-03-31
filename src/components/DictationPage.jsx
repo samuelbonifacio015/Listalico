@@ -6,7 +6,12 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
   const [title, setTitle] = useState('Nota Dictada')
   const [finalText, setFinalText] = useState('')
   const [folderId, setFolderId] = useState(selectedFolder || (folders[0]?.id || null))
+  const [useFallback, setUseFallback] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [fallbackError, setFallbackError] = useState(null)
   const textareaRef = useRef(null)
+  const mediaRecorderRef = useRef(null)
+  const audioChunksRef = useRef([])
 
   const handleDictationResult = useCallback((text) => {
     setFinalText(prev => {
@@ -27,8 +32,14 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
 
   const isDev = typeof import.meta !== 'undefined' ? import.meta.env?.DEV : process.env.NODE_ENV !== 'production';
   const isNetworkError = typeof error === 'string' && error.toLowerCase().includes('error de red');
+  const ua = diagnostics?.userAgent || (typeof navigator !== 'undefined' ? navigator.userAgent : '')
+  const looksLikeBrave = /Brave/i.test(ua)
+  const looksLikeChromium = /Chromium/i.test(ua) || looksLikeBrave
+  const looksLikeLinux = /Linux/i.test(ua)
+  const looksLikeChromeOfficial = /Chrome\//i.test(ua) && !looksLikeBrave && !/Edg\//i.test(ua)
 
   const handleToggleDictation = () => {
+    if (useFallback) return;
     toggleListening();
     if (!isListening) {
       setTimeout(() => {
@@ -43,9 +54,106 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
 
   const showGhostInterim = Boolean(isListening && interimText);
 
+  const stopFallbackRecording = useCallback(() => {
+    try {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+    } catch (e) {
+      // ignore
+    } finally {
+      setIsRecording(false)
+    }
+  }, [])
+
+  const startFallbackRecording = useCallback(async () => {
+    setFallbackError(null)
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setFallbackError('Tu navegador no soporta grabación de audio (MediaDevices/getUserMedia).')
+      return
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      audioChunksRef.current = []
+
+      const recorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = recorder
+
+      recorder.ondataavailable = (ev) => {
+        if (ev.data && ev.data.size > 0) audioChunksRef.current.push(ev.data)
+      }
+
+      recorder.onerror = () => {
+        setFallbackError('Error grabando audio. Revisa permisos del micrófono.')
+        setIsRecording(false)
+      }
+
+      recorder.onstop = async () => {
+        try {
+          // Stop tracks ASAP to release microphone
+          stream.getTracks().forEach(t => t.stop())
+        } catch (e) {
+          // ignore
+        }
+
+        const blob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' })
+        audioChunksRef.current = []
+
+        if (blob.size === 0) {
+          setFallbackError('No se capturó audio. Intenta de nuevo.')
+          return
+        }
+
+        const transcribeUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TRANSCRIBE_URL)
+          ? import.meta.env.VITE_TRANSCRIBE_URL
+          : '/api/transcribe'
+
+        try {
+          const form = new FormData()
+          form.append('file', blob, 'dictation.webm')
+
+          const res = await fetch(transcribeUrl, { method: 'POST', body: form })
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const data = await res.json()
+          if (data?.text) {
+            handleDictationResult(String(data.text))
+          } else {
+            setFallbackError('El endpoint de transcripción respondió sin `text`.')
+          }
+        } catch (e) {
+          setFallbackError(
+            `No se pudo transcribir automáticamente. Configura un endpoint en VITE_TRANSCRIBE_URL (o implementa POST ${transcribeUrl}).`
+          )
+
+          // Give the user the recorded audio file to debug / send to backend manually
+          try {
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'dictation.webm'
+            a.click()
+            setTimeout(() => URL.revokeObjectURL(url), 1500)
+          } catch (e2) {
+            // ignore
+          }
+        }
+      }
+
+      recorder.start()
+      setIsRecording(true)
+    } catch (e) {
+      setFallbackError('No se pudo acceder al micrófono. Revisa permisos del sitio/navegador.')
+      setIsRecording(false)
+    }
+  }, [handleDictationResult])
+
   const handleSave = () => {
     if (isListening) {
       stopListening();
+    }
+    if (isRecording) {
+      stopFallbackRecording()
     }
     onSave({
       title: title.trim() || 'Nota sin título',
@@ -70,6 +178,12 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [title, finalText, folderId, onSave, onClose]);
+
+  useEffect(() => {
+    return () => {
+      stopFallbackRecording()
+    }
+  }, [stopFallbackRecording])
 
   if (!isSupported) {
     return (
@@ -170,8 +284,73 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
         }}>
           <div style={{ fontWeight: 700, marginBottom: 6 }}>Cómo solucionarlo (dev)</div>
           <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-            En Brave/Chromium en Linux, el dictado nativo (Web Speech API) suele fallar con <code>network</code>.
-            Prueba con <strong>Google Chrome oficial</strong> para confirmar, o usa el modo fallback (grabación + transcripción por servidor).
+            El dictado nativo (Web Speech API) está fallando con <code>network</code>. Esto puede pasar por restricciones del motor, conexión/VPN/proxy/firewall o por el proveedor del servicio.
+            {looksLikeLinux && looksLikeChromium && !looksLikeChromeOfficial ? (
+              <> En algunas builds Chromium en Linux (incl. Brave/Chromium), puede fallar aunque exista <code>webkitSpeechRecognition</code>.</>
+            ) : null}
+            {' '}Como alternativa, usa el modo fallback (grabación + transcripción por servidor).
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                stopListening()
+                setUseFallback(true)
+              }}
+              style={{ padding: '8px 12px', fontSize: '0.95rem' }}
+            >
+              Activar fallback
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setUseFallback(false)
+                setFallbackError(null)
+              }}
+              style={{ padding: '8px 12px', fontSize: '0.95rem' }}
+            >
+              Usar dictado nativo
+            </button>
+          </div>
+        </div>
+      )}
+
+      {useFallback && (
+        <div style={{
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '14px 16px',
+          marginBottom: '16px',
+          color: 'var(--text-primary)'
+        }}>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Modo fallback (grabación)</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.45 }}>
+            Graba audio con <code>MediaRecorder</code> y lo envía a <code>VITE_TRANSCRIBE_URL</code> (o <code>/api/transcribe</code>) para transcribir.
+          </div>
+          {fallbackError && (
+            <div style={{ marginTop: 8, color: '#ff453a', fontSize: '0.9rem', fontWeight: 600 }}>
+              {fallbackError}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+            {!isRecording ? (
+              <button
+                className="btn btn-primary"
+                onClick={startFallbackRecording}
+                style={{ padding: '8px 12px', fontSize: '0.95rem' }}
+              >
+                Empezar a grabar
+              </button>
+            ) : (
+              <button
+                className="btn btn-secondary"
+                onClick={stopFallbackRecording}
+                style={{ padding: '8px 12px', fontSize: '0.95rem' }}
+              >
+                Detener grabación
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -145,7 +145,19 @@ const useDictation = (onFinalResult) => {
       
       let errorMessage = 'Error en el reconocimiento de voz.';
       if (event.error === 'network') {
-        errorMessage = 'Error de red (Network). Chromium Linux requiere credenciales de Google API en su compilación. Por favor, asegúrate de usar Google Chrome oficial o revisar tu conexión a internet.';
+        const ua = navigator.userAgent || '';
+        const isLinux = /Linux/i.test(ua);
+        const isBrave = /Brave/i.test(ua);
+        const isChromiumLike = /Chromium/i.test(ua) || isBrave;
+        const isChrome = /Chrome\//i.test(ua) && !isBrave && !/Edg\//i.test(ua);
+
+        if (isLinux && isChromiumLike && !isChrome) {
+          errorMessage =
+            'Error de red (network) en el motor de dictado. En algunas compilaciones Chromium en Linux (incl. Brave/Chromium), el dictado nativo puede fallar por el servicio de reconocimiento. Prueba con Google Chrome oficial o usa el modo fallback (grabación + transcripción por servidor).';
+        } else {
+          errorMessage =
+            'Error de red (network) en el motor de dictado. Revisa conexión/VPN/proxy/firewall y permisos del micrófono. Si persiste, usa el modo fallback (grabación + transcripción por servidor).';
+        }
       } else if (event.error === 'not-allowed' || event.error === 'audio-capture') {
         errorMessage = 'Permiso denegado para usar el micrófono.';
       } else if (event.error === 'aborted') {
