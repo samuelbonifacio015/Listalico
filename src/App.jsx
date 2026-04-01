@@ -333,7 +333,7 @@ function App() {
 
   return (
     <div className="app">
-      <div className="app-header">
+      <div className="app-header app-header--refactored">
         <div className="header-left">
           <div className="app-title-container">
             <div className="app-logo">
@@ -345,8 +345,11 @@ function App() {
               <span className="title-subtitle">Tu espacio de notas</span>
             </h1>
           </div>
-          <div className="search-container">
-            <Search size={16} className="search-icon" />
+        </div>
+
+        <div className="header-center">
+          <div className="search-container search-container--enhanced">
+            <Search size={18} className="search-icon" />
             <input
               type="text"
               placeholder="Buscar en tus notas..."
@@ -354,60 +357,34 @@ function App() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
             />
-            <div className="search-stats">
-              {searchTerm && (
-                <span className="search-results">
-                  {filteredNotes.length} resultado{filteredNotes.length !== 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
+            {searchTerm && (
+              <button
+                className="search-clear"
+                onClick={() => setSearchTerm('')}
+                aria-label="Limpiar búsqueda"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
-        
-        <div className="header-actions">
-          <div className="action-group">
-            <button 
-              onClick={createNewNote} 
-              className="btn btn-primary create-note-btn" 
-              title="Nueva nota"
-            >
-              <Plus size={16} />
-              <span>Nueva nota</span>
-            </button>
-            <button 
-              onClick={createNewFolder} 
-              className="btn btn-secondary" 
-              title="Nueva carpeta"
-            >
-              <FolderPlus size={16} />
-            </button>
-          </div>
-          <div className="action-group">
-            <button onClick={exportData} className="btn btn-secondary" title="Exportar datos">
-              <Download size={16} />
-              <span className="btn-text">Exportar</span>
-            </button>
-            <label className="btn btn-secondary" title="Importar datos">
-              <Upload size={16} />
-              <span className="btn-text">Importar</span>
-              <input
-                type="file"
-                accept=".json"
-                onChange={importData}
-                style={{ display: 'none' }}
-              />
-            </label>
-          </div>
-          <div className="stats-badge">
-            <span className="notes-count">{notes.length}</span>
-          </div>
 
+        <div className="header-right">
+          <button
+            onClick={createNewNote}
+            className="btn btn-primary create-note-btn"
+            title="Nueva nota"
+          >
+            <Plus size={18} />
+            <span className="btn-text">Nueva nota</span>
+          </button>
 
-          {/* Mobile menu button */}
-          <button 
+          <button
             className="mobile-menu-btn"
             onClick={() => setShowMobileMenu(!showMobileMenu)}
             title="Menú"
+            aria-label={showMobileMenu ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={showMobileMenu}
           >
             {showMobileMenu ? <X size={20} /> : <Menu size={20} />}
           </button>

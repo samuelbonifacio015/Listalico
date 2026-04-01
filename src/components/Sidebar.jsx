@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Folder, Edit3, Trash2, Palette, RotateCcw, X, FolderPlus, ChevronDown, ChevronRight, FileText, Plus, Mic } from 'lucide-react'
+import { Folder, Edit3, Trash2, Palette, RotateCcw, X, FolderPlus, ChevronDown, ChevronRight, FileText, Plus, Mic, Upload, Download } from 'lucide-react'
 
 const Sidebar = ({ 
   folders = [], 
