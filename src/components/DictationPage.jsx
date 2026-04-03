@@ -215,8 +215,8 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
   return (
     <div className="dictation-page" style={{
       display: 'flex', flexDirection: 'column', height: '100%',
-      backgroundColor: 'var(--bg-secondary)', padding: '40px',
-      borderRadius: '16px', border: '1px solid var(--border-color)',
+      backgroundColor: 'var(--color-bg-secondary)', padding: '40px',
+      borderRadius: '16px', border: '1px solid var(--color-border)',
       animation: 'fadeIn 0.3s ease-out'
     }}>
       {/* ── Header ── */}
@@ -228,9 +228,9 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
             style={{
               width: '60px', height: '60px', borderRadius: '50%',
               display: 'flex', justifyContent: 'center', alignItems: 'center',
-              backgroundColor: isListening ? 'rgba(255, 69, 58, 0.2)' : 'var(--bg-primary)',
-              color: isListening ? '#ff453a' : 'var(--text-secondary)',
-              border: `2px solid ${isListening ? '#ff453a' : 'var(--border-color)'}`,
+              backgroundColor: isListening ? 'rgba(255, 69, 58, 0.2)' : 'var(--color-bg-primary)',
+              color: isListening ? '#ff453a' : 'var(--color-text-secondary)',
+              border: `2px solid ${isListening ? '#ff453a' : 'var(--color-border)'}`,
               cursor: 'pointer', transition: 'all 0.3s ease',
               boxShadow: isListening ? '0 0 20px rgba(255, 69, 58, 0.4)' : 'none'
             }}
@@ -246,10 +246,10 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
               placeholder="Título del dictado..."
               style={{
                 fontSize: '1.8rem', fontWeight: 'bold', background: 'transparent',
-                border: 'none', color: 'var(--text-primary)', outline: 'none', fontFamily: 'inherit'
+                border: 'none', color: 'var(--color-text-primary)', outline: 'none', fontFamily: 'inherit'
               }}
             />
-            <span style={{ color: isListening ? '#ff453a' : isRecording ? '#ff9f0a' : 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>
+            <span style={{ color: isListening ? '#ff453a' : isRecording ? '#ff9f0a' : 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: '500' }}>
               {isListening
                 ? 'Grabando activo... puedes hablar'
                 : isRecording
@@ -278,12 +278,12 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
 
       {/* ── Folder selector ── */}
       <div className="dictation-controls" style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
-        <div className="folder-selection" style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--bg-primary)', padding: '8px 15px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-          <Folder size={16} color="var(--text-secondary)" />
+        <div className="folder-selection" style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'var(--color-bg-primary)', padding: '8px 15px', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+          <Folder size={16} color="var(--color-text-secondary)" />
           <select
             value={folderId || ''}
             onChange={(e) => setFolderId(e.target.value ? parseInt(e.target.value) : null)}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', outline: 'none', fontSize: '0.9rem', cursor: 'pointer' }}
+            style={{ background: 'transparent', border: 'none', color: 'var(--color-text-primary)', outline: 'none', fontSize: '0.9rem', cursor: 'pointer' }}
           >
             <option value="">Sin carpeta</option>
             {folders.map(f => (
@@ -295,9 +295,9 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
 
       {/* ── Banner error de red (Web Speech) ── */}
       {isNetworkError && (
-        <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px', color: 'var(--text-primary)', lineHeight: 1.45 }}>
+        <div style={{ background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px', color: 'var(--color-text-primary)', lineHeight: 1.45 }}>
           <div style={{ fontWeight: 700, marginBottom: 6 }}>Cómo solucionarlo</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
             El dictado nativo (Web Speech API) está fallando con <code>network</code>.
             {looksLikeLinux && looksLikeChromium && !looksLikeChromeOfficial
               ? <> En algunas builds Chromium en Linux (incl. Brave/Chromium), puede fallar aunque exista <code>webkitSpeechRecognition</code>.</>
@@ -317,11 +317,11 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
 
       {/* ── Panel fallback (chunks realtime) ── */}
       {useFallback && (
-        <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px', color: 'var(--text-primary)' }}>
+        <div style={{ background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '14px 16px', marginBottom: '16px', color: 'var(--color-text-primary)' }}>
           <div style={{ fontWeight: 700, marginBottom: 6 }}>
             Modo fallback — transcripción cada 5s
           </div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.45 }}>
+          <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', lineHeight: 1.45 }}>
             Graba en chunks de <strong>5 segundos</strong> y transcribe automáticamente. El texto aparece progresivamente mientras hablas.
           </div>
 
@@ -353,9 +353,9 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
 
       {/* ── Diagnóstico (solo dev) ── */}
       {isDev && diagnostics && (
-        <details style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px', color: 'var(--text-primary)' }}>
+        <details style={{ background: 'var(--color-bg-primary)', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px', color: 'var(--color-text-primary)' }}>
           <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Diagnóstico (dev)</summary>
-          <pre style={{ marginTop: 10, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          <pre style={{ marginTop: 10, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
             {JSON.stringify(diagnostics, null, 2)}
           </pre>
         </details>
@@ -368,7 +368,7 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
             aria-hidden="true"
             style={{
               position: 'absolute', left: 30, right: 30, bottom: 18,
-              pointerEvents: 'none', color: 'var(--text-secondary)', opacity: 0.8,
+              pointerEvents: 'none', color: 'var(--color-text-secondary)', opacity: 0.8,
               fontSize: '1.05rem', lineHeight: '1.4', fontStyle: 'italic',
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', zIndex: 2,
               textShadow: '0 1px 0 rgba(0,0,0,0.2)'
@@ -385,13 +385,13 @@ const DictationPage = ({ folders, selectedFolder, onSave, onClose }) => {
           placeholder="Presiona el micrófono y comienza a hablar. El texto aparecerá aquí mágicamente..."
           style={{
             flex: 1, width: '100%', resize: 'none', padding: '30px',
-            fontSize: '1.2rem', lineHeight: '1.6', backgroundColor: 'var(--bg-primary)',
-            color: 'var(--text-primary)', border: '1px solid var(--border-color)',
+            fontSize: '1.2rem', lineHeight: '1.6', backgroundColor: 'var(--color-bg-primary)',
+            color: 'var(--color-text-primary)', border: '1px solid var(--color-border)',
             borderRadius: '12px', outline: 'none', transition: 'border-color 0.3s',
             boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.05)'
           }}
-          onFocus={(e) => e.target.style.borderColor = 'var(--accent-primary)'}
-          onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+          onFocus={(e) => e.target.style.borderColor = 'var(--color-accent)'}
+          onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
         />
       </div>
 
