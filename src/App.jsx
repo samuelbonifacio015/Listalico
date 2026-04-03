@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, FolderPlus, Download, Upload, Trash2, Sparkles, BookOpen, Github, Heart, Menu, X } from 'lucide-react'
+import { Plus, Search, FolderPlus, Download, Upload, Trash2, Sparkles, BookOpen, Github, Heart, Menu, X, Home, Mic } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import NotesList from './components/NotesList'
 import NoteEditor from './components/NoteEditor'
@@ -391,78 +391,57 @@ function App() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
-      {showMobileMenu && (
-        <div className="mobile-menu">
-          <div className="mobile-menu-content">
-            <div className="mobile-search">
-              <Search size={16} className="search-icon" />
-              <input
-                type="text"
-                placeholder="Buscar en tus notas..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="mobile-search-input"
-              />
-            </div>
-            
-            <div className="mobile-actions">
-              <button 
-                onClick={() => {
-                  createNewNote()
-                  setShowMobileMenu(false)
-                }} 
-                className="mobile-action-btn primary"
-              >
-                <Plus size={16} />
-                <span>Nueva nota</span>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  createNewFolder()
-                  setShowMobileMenu(false)
-                }} 
-                className="mobile-action-btn"
-              >
-                <FolderPlus size={16} />
-                <span>Nueva carpeta</span>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  exportData()
-                  setShowMobileMenu(false)
-                }} 
-                className="mobile-action-btn"
-              >
-                <Download size={16} />
-                <span>Exportar datos</span>
-              </button>
-              
-              <label 
-                className="mobile-action-btn"
-                onClick={() => setShowMobileMenu(false)}
-              >
-                <Upload size={16} />
-                <span>Importar datos</span>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={importData}
-                  style={{ display: 'none' }}
-                />
-              </label>
-            </div>
-            
-            {searchTerm && (
-              <div className="mobile-search-results">
-                {filteredNotes.length} resultado{filteredNotes.length !== 1 ? 's' : ''} encontrado{filteredNotes.length !== 1 ? 's' : ''}
-              </div>
-            )}
-          </div>
+      {/* Mobile Overlay Menu */}
+      <div className={`mobile-overlay-menu ${showMobileMenu ? 'open' : ''}`}>
+        <div className="mobile-menu-header">
+          <h2 className="app-title">Menú</h2>
+          <button onClick={() => setShowMobileMenu(false)} className="btn hover-lift" style={{background: 'transparent', color: 'white', border: 'none'}}>
+            <X size={24} />
+          </button>
         </div>
-      )}
+        
+        <div className="stagger-item">
+          <button 
+            onClick={() => {
+              createNewFolder()
+              setShowMobileMenu(false)
+            }} 
+            className="overlay-action-btn"
+          >
+            <FolderPlus size={20} />
+            Nueva Carpeta
+          </button>
+        </div>
+
+        <div className="stagger-item">
+          <button 
+            onClick={() => {
+              exportData()
+              setShowMobileMenu(false)
+            }} 
+            className="overlay-action-btn"
+          >
+            <Download size={20} />
+            Exportar datos
+          </button>
+        </div>
+
+        <div className="stagger-item">
+          <label className="overlay-action-btn" style={{cursor: 'pointer'}}>
+            <Upload size={20} />
+            Importar datos
+            <input
+              type="file"
+              accept=".json"
+              onChange={(e) => {
+                importData(e)
+                setShowMobileMenu(false)
+              }}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
+      </div>
 
       <div className="app-body">
         <Sidebar
@@ -605,6 +584,54 @@ function App() {
           </div>
         </div>
       </footer>
+
+      {/* Floating Bottom Bar (Mobile Only via CSS) */}
+      <div className="mobile-bottom-bar">
+        <button 
+          className="nav-item" 
+          onClick={() => {
+            setShowNoteEditor(false)
+            setShowDictationPage(false)
+            setShowPreview(false)
+          }}
+        >
+          <Home size={20} />
+          <span>Inicio</span>
+        </button>
+        <button 
+          className="nav-item"
+          onClick={() => {
+            document.querySelector('.search-input')?.focus()
+          }}
+        >
+          <Search size={20} />
+          <span>Buscar</span>
+        </button>
+        <button 
+          className="nav-item primary-action"
+          onClick={createNewNote}
+        >
+          <Plus size={24} />
+        </button>
+        <button 
+          className="nav-item"
+          onClick={() => {
+            setShowDictationPage(true)
+            setShowNoteEditor(false)
+            setShowPreview(false)
+          }}
+        >
+          <Mic size={20} />
+          <span>Dictado</span>
+        </button>
+        <button 
+          className={`nav-item ${showMobileMenu ? 'active' : ''}`}
+          onClick={() => setShowMobileMenu(!showMobileMenu)}
+        >
+          <Menu size={20} />
+          <span>Menú</span>
+        </button>
+      </div>
     </div>
   )
 }
